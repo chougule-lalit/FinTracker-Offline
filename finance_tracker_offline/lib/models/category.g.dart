@@ -32,8 +32,13 @@ const CategorySchema = CollectionSchema(
       name: r'isDefault',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(
+    r'isExpense': PropertySchema(
       id: 3,
+      name: r'isExpense',
+      type: IsarType.bool,
+    ),
+    r'name': PropertySchema(
+      id: 4,
       name: r'name',
       type: IsarType.string,
     )
@@ -73,7 +78,8 @@ void _categorySerialize(
   writer.writeString(offsets[0], object.colorHex);
   writer.writeString(offsets[1], object.iconCode);
   writer.writeBool(offsets[2], object.isDefault);
-  writer.writeString(offsets[3], object.name);
+  writer.writeBool(offsets[3], object.isExpense);
+  writer.writeString(offsets[4], object.name);
 }
 
 Category _categoryDeserialize(
@@ -87,7 +93,8 @@ Category _categoryDeserialize(
   object.iconCode = reader.readString(offsets[1]);
   object.id = id;
   object.isDefault = reader.readBool(offsets[2]);
-  object.name = reader.readString(offsets[3]);
+  object.isExpense = reader.readBool(offsets[3]);
+  object.name = reader.readString(offsets[4]);
   return object;
 }
 
@@ -105,6 +112,8 @@ P _categoryDeserializeProp<P>(
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
+      return (reader.readBool(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -522,6 +531,16 @@ extension CategoryQueryFilter
     });
   }
 
+  QueryBuilder<Category, Category, QAfterFilterCondition> isExpenseEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isExpense',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Category, Category, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -696,6 +715,18 @@ extension CategoryQuerySortBy on QueryBuilder<Category, Category, QSortBy> {
     });
   }
 
+  QueryBuilder<Category, Category, QAfterSortBy> sortByIsExpense() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExpense', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Category, Category, QAfterSortBy> sortByIsExpenseDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExpense', Sort.desc);
+    });
+  }
+
   QueryBuilder<Category, Category, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -759,6 +790,18 @@ extension CategoryQuerySortThenBy
     });
   }
 
+  QueryBuilder<Category, Category, QAfterSortBy> thenByIsExpense() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExpense', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Category, Category, QAfterSortBy> thenByIsExpenseDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExpense', Sort.desc);
+    });
+  }
+
   QueryBuilder<Category, Category, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -794,6 +837,12 @@ extension CategoryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Category, Category, QDistinct> distinctByIsExpense() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isExpense');
+    });
+  }
+
   QueryBuilder<Category, Category, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -825,6 +874,12 @@ extension CategoryQueryProperty
   QueryBuilder<Category, bool, QQueryOperations> isDefaultProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDefault');
+    });
+  }
+
+  QueryBuilder<Category, bool, QQueryOperations> isExpenseProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isExpense');
     });
   }
 

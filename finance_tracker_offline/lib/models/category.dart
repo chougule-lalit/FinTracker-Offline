@@ -13,4 +13,6 @@ class Category {
   late String colorHex;
 
   bool isDefault = false;
+
+  late bool isExpense;
 }
