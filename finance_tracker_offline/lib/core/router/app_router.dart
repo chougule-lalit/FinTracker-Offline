@@ -1,9 +1,11 @@
 import 'package:finance_tracker_offline/core/router/scaffold_with_nav_bar.dart';
 import 'package:finance_tracker_offline/features/accounts/accounts_screen.dart';
+import 'package:finance_tracker_offline/features/accounts/add_account_screen.dart';
 import 'package:finance_tracker_offline/features/add_transaction/add_transaction_screen.dart';
 import 'package:finance_tracker_offline/features/dashboard/dashboard_screen.dart';
 import 'package:finance_tracker_offline/features/settings/settings_screen.dart';
 import 'package:finance_tracker_offline/features/stats/stats_screen.dart';
+import 'package:finance_tracker_offline/models/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,7 +45,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/add_transaction',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const AddTransactionScreen(),
+        builder: (context, state) {
+          final transaction = state.extra as Transaction?;
+          return AddTransactionScreen(transactionToEdit: transaction);
+        },
+      ),
+      GoRoute(
+        path: '/add_account',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AddAccountScreen(),
       ),
     ],
   );

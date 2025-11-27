@@ -1,4 +1,5 @@
 import 'package:isar_community/isar.dart';
+import 'account.dart';
 import 'category.dart';
 
 part 'transaction.g.dart';
@@ -17,5 +18,9 @@ class Transaction {
 
   String? smsRawText;
 
+  String? smsId;
+
   final category = IsarLink<Category>();
+
+  final account = IsarLink<Account>();
 }

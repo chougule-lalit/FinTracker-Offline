@@ -37,8 +37,13 @@ const TransactionSchema = CollectionSchema(
       name: r'note',
       type: IsarType.string,
     ),
-    r'smsRawText': PropertySchema(
+    r'smsId': PropertySchema(
       id: 4,
+      name: r'smsId',
+      type: IsarType.string,
+    ),
+    r'smsRawText': PropertySchema(
+      id: 5,
       name: r'smsRawText',
       type: IsarType.string,
     )
@@ -54,6 +59,12 @@ const TransactionSchema = CollectionSchema(
       id: 9039453146683828404,
       name: r'category',
       target: r'Category',
+      single: true,
+    ),
+    r'account': LinkSchema(
+      id: -8467990729867616553,
+      name: r'account',
+      target: r'Account',
       single: true,
     )
   },
@@ -71,6 +82,12 @@ int _transactionEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.note.length * 3;
+  {
+    final value = object.smsId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.smsRawText;
     if (value != null) {
@@ -90,7 +107,8 @@ void _transactionSerialize(
   writer.writeDateTime(offsets[1], object.date);
   writer.writeBool(offsets[2], object.isExpense);
   writer.writeString(offsets[3], object.note);
-  writer.writeString(offsets[4], object.smsRawText);
+  writer.writeString(offsets[4], object.smsId);
+  writer.writeString(offsets[5], object.smsRawText);
 }
 
 Transaction _transactionDeserialize(
@@ -105,7 +123,8 @@ Transaction _transactionDeserialize(
   object.id = id;
   object.isExpense = reader.readBool(offsets[2]);
   object.note = reader.readString(offsets[3]);
-  object.smsRawText = reader.readStringOrNull(offsets[4]);
+  object.smsId = reader.readStringOrNull(offsets[4]);
+  object.smsRawText = reader.readStringOrNull(offsets[5]);
   return object;
 }
 
@@ -126,6 +145,8 @@ P _transactionDeserializeProp<P>(
       return (reader.readString(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
+    case 5:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -136,13 +157,14 @@ Id _transactionGetId(Transaction object) {
 }
 
 List<IsarLinkBase<dynamic>> _transactionGetLinks(Transaction object) {
-  return [object.category];
+  return [object.category, object.account];
 }
 
 void _transactionAttach(
     IsarCollection<dynamic> col, Id id, Transaction object) {
   object.id = id;
   object.category.attach(col, col.isar.collection<Category>(), r'category', id);
+  object.account.attach(col, col.isar.collection<Account>(), r'account', id);
 }
 
 extension TransactionQueryWhereSort
@@ -535,6 +557,155 @@ extension TransactionQueryFilter
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'smsId',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'smsId',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'smsId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'smsId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'smsId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'smsId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'smsId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'smsId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'smsId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'smsId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> smsIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'smsId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      smsIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'smsId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
       smsRawTextIsNull() {
     return QueryBuilder.apply(this, (query) {
@@ -708,6 +879,20 @@ extension TransactionQueryLinks
       return query.linkLength(r'category', 0, true, 0, true);
     });
   }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> account(
+      FilterQuery<Account> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'account');
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      accountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'account', 0, true, 0, true);
+    });
+  }
 }
 
 extension TransactionQuerySortBy
@@ -757,6 +942,18 @@ extension TransactionQuerySortBy
   QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByNoteDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'note', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortBySmsId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortBySmsIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsId', Sort.desc);
     });
   }
 
@@ -835,6 +1032,18 @@ extension TransactionQuerySortThenBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenBySmsId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenBySmsIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'smsId', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> thenBySmsRawText() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'smsRawText', Sort.asc);
@@ -875,6 +1084,13 @@ extension TransactionQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QDistinct> distinctBySmsId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'smsId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QDistinct> distinctBySmsRawText(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -912,6 +1128,12 @@ extension TransactionQueryProperty
   QueryBuilder<Transaction, String, QQueryOperations> noteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'note');
+    });
+  }
+
+  QueryBuilder<Transaction, String?, QQueryOperations> smsIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'smsId');
     });
   }
 

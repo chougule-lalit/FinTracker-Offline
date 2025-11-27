@@ -1,5 +1,6 @@
 import 'package:finance_tracker_offline/features/dashboard/providers/transaction_provider.dart';
 import 'package:finance_tracker_offline/features/dashboard/widgets/transaction_card.dart';
+import 'package:finance_tracker_offline/features/sms_parser/providers/sms_provider.dart';
 import 'package:finance_tracker_offline/models/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,30 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transactions'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Syncing SMS...')),
+              );
+              try {
+                final count = await ref.refresh(smsSyncProvider.future);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Synced $count new transactions')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Sync failed: $e')),
+                  );
+                }
+              }
+            },
+          ),
+        ],
       ),
       body: transactionListAsync.when(
         data: (transactions) {
@@ -94,7 +119,10 @@ class DashboardScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  ...txns.map((txn) => TransactionCard(transaction: txn)),
+                  ...txns.map((txn) => InkWell(
+                    onTap: () => context.push('/add_transaction', extra: txn),
+                    child: TransactionCard(transaction: txn),
+                  )),
                   const Divider(),
                 ],
               );

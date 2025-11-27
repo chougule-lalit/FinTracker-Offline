@@ -8,18 +8,40 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
-  const AddTransactionScreen({super.key});
+  final Transaction? transactionToEdit;
+
+  const AddTransactionScreen({super.key, this.transactionToEdit});
 
   @override
   ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
-  bool isExpense = true;
+  final _formKey = GlobalKey<FormState>();
+  late bool _isExpense;
+  late DateTime _selectedDate;
+  Category? _selectedCategory;
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
-  Category? _selectedCategory;
-  DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize state based on whether we are editing or creating
+    if (widget.transactionToEdit != null) {
+      final txn = widget.transactionToEdit!;
+      _isExpense = txn.isExpense;
+      _selectedDate = txn.date;
+      _amountController.text = txn.amount.toString();
+      _noteController.text = txn.note;
+      // We load the category in the build method once providers are ready
+      // But we set the initial reference here
+      _selectedCategory = txn.category.value;
+    } else {
+      _isExpense = true;
+      _selectedDate = DateTime.now();
+    }
+  }
 
   @override
   void dispose() {
@@ -28,64 +50,56 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     super.dispose();
   }
 
-  IconData _getIconData(String iconCode) {
-    switch (iconCode) {
-      case 'fastfood':
-        return Icons.fastfood;
-      case 'directions_bus':
-        return Icons.directions_bus;
-      case 'shopping_bag':
-        return Icons.shopping_bag;
-      case 'payments':
-        return Icons.payments;
-      case 'work':
-        return Icons.work;
-      default:
-        return Icons.category;
-    }
-  }
+  void _saveTransaction() async {
+    if (_formKey.currentState!.validate() && _selectedCategory != null) {
+      final amount = double.parse(_amountController.text);
+      final dbService = ref.read(dbServiceProvider);
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
+      if (widget.transactionToEdit != null) {
+        // UPDATE Existing
+        final txn = widget.transactionToEdit!;
+        
+        // Capture old values for balance reversal
+        final oldAmount = txn.amount;
+        final oldIsExpense = txn.isExpense;
+        final oldAccount = txn.account.value;
 
-  Future<void> _saveTransaction() async {
-    if (_amountController.text.isEmpty || _selectedCategory == null) {
+        // Update fields
+        txn.amount = amount;
+        txn.isExpense = _isExpense;
+        txn.date = _selectedDate;
+        txn.note = _noteController.text;
+        txn.category.value = _selectedCategory;
+
+        await dbService.updateTransaction(
+          txn,
+          oldAmount: oldAmount,
+          oldIsExpense: oldIsExpense,
+          oldAccount: oldAccount,
+        );
+      } else {
+        // CREATE New
+        final txn = Transaction()
+          ..amount = amount
+          ..isExpense = _isExpense
+          ..date = _selectedDate
+          ..note = _noteController.text;
+        
+        txn.category.value = _selectedCategory;
+        // Ideally link to a default account or allow account selection here
+        // For now, we leave account null or link to default if you have one logic
+        // But the prompt asked for basic flow first. 
+        
+        await dbService.addTransaction(txn);
+      }
+
+      if (mounted) {
+        context.pop();
+      }
+    } else if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter amount and select category')),
+        const SnackBar(content: Text('Please select a category')),
       );
-      return;
-    }
-
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid amount')),
-      );
-      return;
-    }
-
-    final txn = Transaction()
-      ..amount = amount
-      ..note = _noteController.text
-      ..date = _selectedDate
-      ..isExpense = isExpense
-      ..category.value = _selectedCategory;
-
-    await ref.read(dbServiceProvider).addTransaction(txn);
-
-    if (mounted) {
-      context.pop();
     }
   }
 
@@ -95,120 +109,155 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Transaction'),
+        title: Text(widget.transactionToEdit == null ? 'Add Transaction' : 'Edit Transaction'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Toggle Buttons
-            ToggleButtons(
-              isSelected: [isExpense, !isExpense],
-              onPressed: (int index) {
-                setState(() {
-                  isExpense = index == 0;
-                  _selectedCategory = null; // Reset category on toggle
-                });
-              },
-              children: const [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24),
-                  child: Text('Expense'),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24),
-                  child: Text('Income'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Amount TextField
-            TextField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Amount',
-                border: OutlineInputBorder(),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Toggle Type
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: true, label: Text('Expense'), icon: Icon(Icons.arrow_downward)),
+                  ButtonSegment(value: false, label: Text('Income'), icon: Icon(Icons.arrow_upward)),
+                ],
+                selected: {_isExpense},
+                onSelectionChanged: (Set<bool> newSelection) {
+                  setState(() {
+                    _isExpense = newSelection.first;
+                    _selectedCategory = null; // Reset category when switching type
+                  });
+                },
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-            // Category Dropdown
-            categoriesAsync.when(
-              data: (categories) {
-                final filteredCategories = categories
-                    .where((c) => c.isExpense == isExpense)
-                    .toList();
-
-                return DropdownButtonFormField<Category>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: filteredCategories.map((Category category) {
-                    return DropdownMenuItem<Category>(
-                      value: category,
-                      child: Row(
-                        children: [
-                          Icon(_getIconData(category.iconCode)),
-                          const SizedBox(width: 10),
-                          Text(category.name),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (Category? newValue) {
-                    setState(() {
-                      _selectedCategory = newValue;
-                    });
-                  },
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (err, stack) => Text('Error: $err'),
-            ),
-            const SizedBox(height: 20),
-
-            // Date Picker
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
+              // 2. Amount
+              TextFormField(
+                controller: _amountController,
                 decoration: const InputDecoration(
-                  labelText: 'Date',
+                  labelText: 'Amount',
+                  prefixText: '₹ ',
                   border: OutlineInputBorder(),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(DateFormat.yMMMd().format(_selectedDate)),
-                    const Icon(Icons.calendar_today),
-                  ],
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Please enter amount';
+                  if (double.tryParse(value) == null) return 'Invalid amount';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // 3. Category Dropdown
+              categoriesAsync.when(
+                data: (allCategories) {
+                  // Filter categories by type
+                  final filteredCategories = allCategories
+                      .where((c) => c.isExpense == _isExpense)
+                      .toList();
+
+                  // FIX: Ensure selected category is valid in the filtered list
+                  // We compare by ID because objects might be different instances
+                  if (_selectedCategory != null) {
+                    final exists = filteredCategories.any((c) => c.id == _selectedCategory!.id);
+                    if (!exists) {
+                      // If the category doesn't exist in the filtered list (e.g. type mismatch), reset it
+                      _selectedCategory = null;
+                    } else {
+                      // Update _selectedCategory to reference the object from the list
+                      // This makes DropdownButton happy (Instance Equality)
+                      _selectedCategory = filteredCategories.firstWhere((c) => c.id == _selectedCategory!.id);
+                    }
+                  }
+
+                  return DropdownButtonFormField<Category>(
+                    value: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: filteredCategories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Row(
+                          children: [
+                            Icon(IconData(
+                              // Basic mapping for now, ideally store proper codepoint/font
+                              category.iconCode == 'fastfood' ? 0xe25a : 
+                              category.iconCode == 'directions_bus' ? 0xe1d5 :
+                              category.iconCode == 'shopping_bag' ? 0xf1cc :
+                              category.iconCode == 'payments' ? 0xe481 :
+                              category.iconCode == 'work' ? 0xe6f4 :
+                              category.iconCode == 'help_outline' ? 0xe887 : 0xe887, // Fallback
+                              fontFamily: 'MaterialIcons'
+                            )),
+                            const SizedBox(width: 10),
+                            Text(category.name),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    },
+                  );
+                },
+                loading: () => const LinearProgressIndicator(),
+                error: (err, stack) => Text('Error: $err'),
+              ),
+              const SizedBox(height: 16),
+
+              // 4. Date Picker
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _selectedDate = picked;
+                    });
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Date',
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  child: Text(DateFormat('dd MMM yyyy').format(_selectedDate)),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-            // Note TextField
-            TextField(
-              controller: _noteController,
-              decoration: const InputDecoration(
-                labelText: 'Note (Optional)',
-                border: OutlineInputBorder(),
+              // 5. Note
+              TextFormField(
+                controller: _noteController,
+                decoration: const InputDecoration(
+                  labelText: 'Note',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const Spacer(),
+              const SizedBox(height: 24),
 
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
+              // 6. Save Button
+              FilledButton(
                 onPressed: _saveTransaction,
-                child: const Text('Save'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Save Transaction', style: TextStyle(fontSize: 16)),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
