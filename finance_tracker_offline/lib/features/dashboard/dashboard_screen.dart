@@ -1,5 +1,7 @@
 import 'package:finance_tracker_offline/features/dashboard/providers/transaction_provider.dart';
 import 'package:finance_tracker_offline/features/dashboard/widgets/transaction_card.dart';
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/features/settings/settings_screen.dart';
 import 'package:finance_tracker_offline/features/sms_parser/providers/sms_provider.dart';
 import 'package:finance_tracker_offline/models/transaction.dart';
 import 'package:flutter/material.dart';
@@ -27,12 +29,22 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     final transactionListAsync = ref.watch(transactionListProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transactions'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.sync),
             onPressed: () async {
@@ -109,8 +121,8 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         Text(
                           totalAmount >= 0
-                              ? '+${totalAmount.toStringAsFixed(2)}'
-                              : totalAmount.toStringAsFixed(2),
+                              ? '+${settings.currencySymbol}${totalAmount.toStringAsFixed(2)}'
+                              : '${settings.currencySymbol}${totalAmount.toStringAsFixed(2)}',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 color: Colors.grey[600],
                                 fontWeight: FontWeight.bold,

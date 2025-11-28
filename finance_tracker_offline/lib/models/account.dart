@@ -17,4 +17,29 @@ class Account {
   late double currentBalance;
 
   late String colorHex;
+
+  Account();
+
+  factory Account.fromJson(Map<String, dynamic> json) {
+    return Account()
+      ..id = json['id'] as int
+      ..name = json['name'] as String
+      ..type = json['type'] as String
+      ..lastFourDigits = json['lastFourDigits'] as String?
+      ..initialBalance = (json['initialBalance'] as num).toDouble()
+      ..currentBalance = (json['currentBalance'] as num).toDouble()
+      ..colorHex = json['colorHex'] as String;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'type': type,
+      'lastFourDigits': lastFourDigits,
+      'initialBalance': initialBalance,
+      'currentBalance': currentBalance,
+      'colorHex': colorHex,
+    };
+  }
 }

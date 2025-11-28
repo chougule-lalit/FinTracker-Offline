@@ -93,6 +93,31 @@ class DbService {
     });
   }
 
+  Future<void> addTransfer(Account fromAccount, Account toAccount, double amount, DateTime date, String note, {String? receiptPath}) async {
+    final txn = Transaction()
+      ..amount = amount
+      ..date = date
+      ..note = note
+      ..isExpense = true
+      ..isTransfer = true
+      ..receiptPath = receiptPath;
+
+    txn.account.value = fromAccount;
+    txn.transferAccount.value = toAccount;
+
+    await isar.writeTxn(() async {
+      await isar.transactions.put(txn);
+      await txn.account.save();
+      await txn.transferAccount.save();
+
+      fromAccount.currentBalance -= amount;
+      await isar.accounts.put(fromAccount);
+
+      toAccount.currentBalance += amount;
+      await isar.accounts.put(toAccount);
+    });
+  }
+
   Future<void> updateTransaction(Transaction txn, {
     required double oldAmount,
     required bool oldIsExpense,
@@ -141,6 +166,16 @@ class DbService {
     return isar.transactions.where().sortByDateDesc().watch(fireImmediately: true);
   }
 
+  Stream<List<Transaction>> watchTransactionsForAccount(int accountId) {
+    return isar.transactions
+        .filter()
+        .account((q) => q.idEqualTo(accountId))
+        .or()
+        .transferAccount((q) => q.idEqualTo(accountId))
+        .sortByDateDesc()
+        .watch(fireImmediately: true);
+  }
+
   Future<List<Transaction>> getTransactionsForMonth(DateTime month) async {
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 1).subtract(const Duration(microseconds: 1));
@@ -163,6 +198,23 @@ class DbService {
 
   Future<Account?> getAccountByDigits(String last4) async {
     return await isar.accounts.filter().lastFourDigitsEqualTo(last4).findFirst();
+  }
+
+  Stream<List<Transaction>> watchTransactionsByDateRange(DateTime start, DateTime end) {
+    return isar.transactions
+        .filter()
+        .dateBetween(start, end)
+        .watch(fireImmediately: true);
+  }
+
+  Stream<List<Transaction>> watchTransactionsByCategoryAndDate(int categoryId, DateTime start, DateTime end) {
+    return isar.transactions
+        .filter()
+        .category((q) => q.idEqualTo(categoryId))
+        .and()
+        .dateBetween(start, end)
+        .sortByDateDesc()
+        .watch(fireImmediately: true);
   }
 }
 

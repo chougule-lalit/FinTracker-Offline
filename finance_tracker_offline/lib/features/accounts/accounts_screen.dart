@@ -1,4 +1,6 @@
 import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
+import 'package:finance_tracker_offline/features/accounts/account_detail_screen.dart';
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
 import 'package:finance_tracker_offline/models/account.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +45,7 @@ class AccountsScreen extends ConsumerWidget {
   }
 }
 
-class AccountCard extends StatelessWidget {
+class AccountCard extends ConsumerWidget {
   final Account account;
 
   const AccountCard({super.key, required this.account});
@@ -62,8 +64,8 @@ class AccountCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     final color = Color(int.parse(account.colorHex, radix: 16));
 
     return Card(
@@ -71,6 +73,14 @@ class AccountCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AccountDetailScreen(account: account),
+            ),
+          );
+        },
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.2),
           child: Icon(
@@ -86,7 +96,7 @@ class AccountCard extends StatelessWidget {
             ? Text('Ends in: ${account.lastFourDigits}')
             : null,
         trailing: Text(
-          currencyFormat.format(account.currentBalance),
+          '${settings.currencySymbol} ${account.currentBalance.toStringAsFixed(2)}',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
