@@ -2,12 +2,13 @@ import 'package:finance_tracker_offline/core/database/db_service.dart';
 import 'package:finance_tracker_offline/models/account.dart';
 import 'package:finance_tracker_offline/models/category.dart';
 import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:isar_community/isar.dart';
 
 class SmsParserService {
   final DbService _dbService = DbService();
 
-  Future<Transaction?> parseAndSaveSms(String body, int timestamp, String address) async {
+  Future<Transaction?> parseSmsToTransaction(String body, int timestamp, String address) async {
     final lowerBody = body.toLowerCase();
 
     // 1. Check Keywords
@@ -89,14 +90,14 @@ class SmsParserService {
     // Ensure "Uncategorized" exists
     Category? uncategorized = await _dbService.isar.categorys.filter().nameEqualTo('Uncategorized').findFirst();
     if (uncategorized == null) {
-      // Create if missing
+      // Create if missing but DO NOT SAVE yet
       uncategorized = Category()
         ..name = 'Uncategorized'
         ..iconCode = 'help_outline'
         ..colorHex = 'FF9E9E9E'
         ..isExpense = true
         ..isDefault = true;
-      await _dbService.addCategory(uncategorized);
+      // await _dbService.addCategory(uncategorized); // REMOVED
     }
 
     // 7. Create & Save
@@ -114,14 +115,69 @@ class SmsParserService {
       transaction.account.value = matchedAccount;
     }
 
-    // Check duplicates and Save
+    // Check duplicates
     final existing = await _dbService.isar.transactions.filter().smsIdEqualTo(transaction.smsId).findFirst();
-    if (existing == null) {
-       await _dbService.addTransaction(transaction); // This calls the balance update logic
-       return transaction;
+    if (existing != null) {
+       return null;
     }
 
-    return null;
+    return transaction;
+  }
+
+  Future<int> syncBatchMessages(List<SmsMessage> messages) async {
+    // Ensure Uncategorized category exists once
+    Category? uncategorized = await _dbService.isar.categorys.filter().nameEqualTo('Uncategorized').findFirst();
+    if (uncategorized == null) {
+      uncategorized = Category()
+        ..name = 'Uncategorized'
+        ..iconCode = 'help_outline'
+        ..colorHex = 'FF9E9E9E'
+        ..isExpense = true
+        ..isDefault = true;
+      await _dbService.addCategory(uncategorized);
+    }
+
+    final List<Transaction> transactionsToSave = [];
+
+    for (final message in messages) {
+       final body = message.body ?? '';
+       final address = message.address ?? 'Unknown';
+       final date = message.date?.millisecondsSinceEpoch ?? DateTime.now().millisecondsSinceEpoch;
+       
+       final transaction = await parseSmsToTransaction(body, date, address);
+       if (transaction != null) {
+         transactionsToSave.add(transaction);
+       }
+    }
+
+    if (transactionsToSave.isEmpty) return 0;
+
+    await _dbService.isar.writeTxn(() async {
+      for (final txn in transactionsToSave) {
+         await _dbService.isar.transactions.put(txn);
+         await txn.category.save();
+         
+         // Handle Account Balance
+         final linkedAccount = txn.account.value;
+         if (linkedAccount != null) {
+            final freshAccount = await _dbService.isar.accounts.get(linkedAccount.id);
+            if (freshAccount != null) {
+               if (txn.isExpense) {
+                 freshAccount.currentBalance -= txn.amount;
+               } else {
+                 freshAccount.currentBalance += txn.amount;
+               }
+               await _dbService.isar.accounts.put(freshAccount);
+               txn.account.value = freshAccount;
+               await txn.account.save();
+            }
+         } else {
+            await txn.account.save();
+         }
+      }
+    });
+    
+    return transactionsToSave.length;
   }
 
   bool _hasKeywords(String body) {

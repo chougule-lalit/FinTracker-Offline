@@ -22,15 +22,13 @@ final smsSyncProvider = FutureProvider<int>((ref) async {
     count: 50,
   );
 
-  int newTransactionsCount = 0;
   final smsParser = SmsParserService();
+  final List<SmsMessage> filteredMessages = [];
 
-  // 3. Filter & Parse
+  // 3. Filter
   for (final message in messages) {
     final body = message.body ?? '';
-    final address = message.address ?? 'Unknown';
-    final date = message.date?.millisecondsSinceEpoch ?? DateTime.now().millisecondsSinceEpoch;
-
+    
     // Basic keyword filter to avoid parsing everything
     final lowerBody = body.toLowerCase();
     if (!lowerBody.contains('bank') &&
@@ -42,13 +40,12 @@ final smsSyncProvider = FutureProvider<int>((ref) async {
         !lowerBody.contains('acct')) {
       continue;
     }
-
-    final transaction = await smsParser.parseAndSaveSms(body, date, address);
-
-    if (transaction != null) {
-      newTransactionsCount++;
-    }
+    
+    filteredMessages.add(message);
   }
+
+  // 4. Batch Sync
+  final newTransactionsCount = await smsParser.syncBatchMessages(filteredMessages);
 
   return newTransactionsCount;
 });

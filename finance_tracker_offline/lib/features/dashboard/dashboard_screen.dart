@@ -1,9 +1,11 @@
 import 'package:finance_tracker_offline/features/dashboard/providers/transaction_provider.dart';
+import 'package:finance_tracker_offline/features/dashboard/widgets/balance_card.dart';
 import 'package:finance_tracker_offline/features/dashboard/widgets/transaction_card.dart';
 import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
 import 'package:finance_tracker_offline/features/settings/settings_screen.dart';
 import 'package:finance_tracker_offline/features/sms_parser/providers/sms_provider.dart';
 import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,120 +35,154 @@ class DashboardScreen extends ConsumerWidget {
     final transactionListAsync = ref.watch(transactionListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transactions'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.sync),
-            onPressed: () async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Syncing SMS...')),
-              );
-              try {
-                final count = await ref.refresh(smsSyncProvider.future);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Synced $count new transactions')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Sync failed: $e')),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-      ),
-      body: transactionListAsync.when(
-        data: (transactions) {
-          if (transactions.isEmpty) {
-            return const Center(child: Text('No transactions yet'));
-          }
-
-          // Group transactions by date
-          final groupedTransactions = <String, List<Transaction>>{};
-          for (var txn in transactions) {
-            final dateKey = _getDateHeader(txn.date);
-            if (!groupedTransactions.containsKey(dateKey)) {
-              groupedTransactions[dateKey] = [];
-            }
-            groupedTransactions[dateKey]!.add(txn);
-          }
-
-          return ListView.builder(
-            itemCount: groupedTransactions.length,
-            itemBuilder: (context, index) {
-              final dateKey = groupedTransactions.keys.elementAt(index);
-              final txns = groupedTransactions[dateKey]!;
-              
-              // Calculate total for the day
-              double totalAmount = 0;
-              for (var txn in txns) {
-                if (txn.isExpense) {
-                  totalAmount -= txn.amount;
-                } else {
-                  totalAmount += txn.amount;
-                }
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: AppColors.scaffoldBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          dateKey,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        Text(
-                          totalAmount >= 0
-                              ? '+${settings.currencySymbol}${totalAmount.toStringAsFixed(2)}'
-                              : '${settings.currencySymbol}${totalAmount.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
+                  const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "VaultFlow",
+                    style: TextStyle(
+                      color: AppColors.primaryBlack,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
                     ),
                   ),
-                  ...txns.map((txn) => InkWell(
-                    onTap: () => context.push('/add_transaction', extra: txn),
-                    child: TransactionCard(transaction: txn),
-                  )),
-                  const Divider(),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.sync, color: AppColors.primaryBlack),
+                    onPressed: () async {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Syncing SMS...')),
+                      );
+                      try {
+                        final count = await ref.refresh(smsSyncProvider.future);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Synced $count new transactions')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Sync failed: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
                 ],
-              );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+              ),
+            ),
+            Expanded(
+              child: transactionListAsync.when(
+                data: (transactions) {
+                  // Calculate totals
+                  double totalBalance = 0;
+                  double totalIncome = 0;
+                  double totalExpense = 0;
+
+                  for (var txn in transactions) {
+                    if (txn.isExpense) {
+                      totalExpense += txn.amount;
+                      totalBalance -= txn.amount;
+                    } else {
+                      totalIncome += txn.amount;
+                      totalBalance += txn.amount;
+                    }
+                  }
+
+                  if (transactions.isEmpty) {
+                    return CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: BalanceCard(
+                            totalBalance: totalBalance,
+                            totalIncome: totalIncome,
+                            totalExpense: totalExpense,
+                            currencySymbol: settings.currencySymbol,
+                          ),
+                        ),
+                        const SliverFillRemaining(
+                          child: Center(child: Text('No transactions yet')),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Group transactions by date
+                  final groupedTransactions = <String, List<Transaction>>{};
+                  for (var txn in transactions) {
+                    final dateKey = _getDateHeader(txn.date);
+                    if (!groupedTransactions.containsKey(dateKey)) {
+                      groupedTransactions[dateKey] = [];
+                    }
+                    groupedTransactions[dateKey]!.add(txn);
+                  }
+
+                  return CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: BalanceCard(
+                          totalBalance: totalBalance,
+                          totalIncome: totalIncome,
+                          totalExpense: totalExpense,
+                          currencySymbol: settings.currencySymbol,
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final dateKey = groupedTransactions.keys.elementAt(index);
+                            final txns = groupedTransactions[dateKey]!;
+                            
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 8.0,
+                                  ),
+                                  child: Text(
+                                    dateKey,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: AppColors.secondaryGrey,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ),
+                                ...txns.map((txn) => InkWell(
+                                  onTap: () => context.push('/add_transaction', extra: txn),
+                                  child: TransactionCard(transaction: txn),
+                                )),
+                                const SizedBox(height: 16),
+                              ],
+                            );
+                          },
+                          childCount: groupedTransactions.length,
+                        ),
+                      ),
+                      const SliverPadding(padding: EdgeInsets.only(bottom: 80)), // Space for FAB
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Error: $err')),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add_transaction'),
-        child: const Icon(Icons.add),
+        backgroundColor: AppColors.brandPrimary,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
