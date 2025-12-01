@@ -9,6 +9,7 @@ import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -45,9 +46,9 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "VaultFlow",
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: AppColors.primaryBlack,
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
@@ -151,10 +152,11 @@ class DashboardScreen extends ConsumerWidget {
                                   ),
                                   child: Text(
                                     dateKey,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: AppColors.secondaryGrey,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.secondaryGrey,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
                                 ...txns.map((txn) => InkWell(
