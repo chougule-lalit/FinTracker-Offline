@@ -8,7 +8,8 @@ import 'package:isar_community/isar.dart';
 class SmsParserService {
   final DbService _dbService = DbService();
 
-  Future<Transaction?> parseSmsToTransaction(String body, int timestamp, String address) async {
+  Future<Transaction?> parseSmsToTransaction(
+      String body, int timestamp, String address) async {
     final lowerBody = body.toLowerCase();
 
     // 1. Check Keywords
@@ -16,8 +17,9 @@ class SmsParserService {
 
     // 2. Extract Account & Match
     String? accountDigits;
-    // Fix: Updated regex to handle "A/c XX1234" where "XX" is between prefix and digits
-    final accountRegex = RegExp(r'(?:XX|ending with |A\/C\s?(?:No)?\s?|acct\s?|account\s?)[:\s\-\.]*(?:XX|xx)?\s*([0-9]{3,4})', caseSensitive: false);
+    final accountRegex = RegExp(
+        r'(?:XX|ending with |A\/C\s?(?:No)?\s?|acct\s?|account\s?)[:\s\-\.]*(?:XX|xx)?\s*([0-9]{3,4})',
+        caseSensitive: false);
     final accountMatch = accountRegex.firstMatch(body);
     if (accountMatch != null) {
       accountDigits = accountMatch.group(1);
@@ -29,14 +31,13 @@ class SmsParserService {
     }
 
     // 3. Transaction Type (Context Aware)
-    // Priority: Debited > Credited
-    int debitedIndex = _findMinIndex(lowerBody, ['debited', 'deducted', 'spent', 'purchase', 'withdrawn', 'paid']);
-    int creditedIndex = _findMinIndex(lowerBody, ['credited', 'deposited', 'received', 'refund', 'added']);
+    int debitedIndex = _findMinIndex(lowerBody,
+        ['debited', 'deducted', 'spent', 'purchase', 'withdrawn', 'paid']);
+    int creditedIndex = _findMinIndex(
+        lowerBody, ['credited', 'deposited', 'received', 'refund', 'added']);
 
     bool isExpense = true;
     if (debitedIndex != -1 && creditedIndex != -1) {
-      // If both exist, checking if "credited" is after "to" (common in "paid to X credited")
-      // Simple heuristic: If debit keyword appears first, it's likely a debit.
       isExpense = debitedIndex < creditedIndex;
     } else if (creditedIndex != -1) {
       isExpense = false;
@@ -47,7 +48,8 @@ class SmsParserService {
     }
 
     // 4. Extract Amount
-    final amountRegex = RegExp(r'(?:Rs\.?|INR)\s*([\d,]+\.?\d*)', caseSensitive: false);
+    final amountRegex =
+        RegExp(r'(?:Rs\.?|INR)\s*([\d,]+\.?\d*)', caseSensitive: false);
     final amountMatch = amountRegex.firstMatch(body);
     if (amountMatch == null) return null;
 
@@ -57,76 +59,75 @@ class SmsParserService {
 
     // 5. Extract Merchant (Note)
     String merchant = '';
-    // Regex to find text between keywords
     if (isExpense) {
-      // For Debit: "paid to Zomato", "at Zomato", "towards Zomato"
-      final merchantRegex = RegExp(r'(?:to|at|towards|for)\s+([A-Za-z0-9\s\.\-]+?)(?:\s+(?:on|from|using|ref|txn|date|credited)|$)', caseSensitive: false);
+      final merchantRegex = RegExp(
+          r'(?:to|at|towards|for)\s+([A-Za-z0-9\s\.\-]+?)(?:\s+(?:on|from|using|ref|txn|date|credited)|$)',
+          caseSensitive: false);
       final match = merchantRegex.firstMatch(body);
       if (match != null) merchant = match.group(1)!.trim();
     } else {
-      // For Credit: "from Zomato", "by Zomato", "for Salary" (Added 'for' support)
-      final merchantRegex = RegExp(r'(?:from|by|for)\s+([A-Za-z0-9\s\.\-]+?)(?:\s+(?:on|to|using|ref|txn|date)|$)', caseSensitive: false);
+      final merchantRegex = RegExp(
+          r'(?:from|by|for)\s+([A-Za-z0-9\s\.\-]+?)(?:\s+(?:on|to|using|ref|txn|date)|$)',
+          caseSensitive: false);
       final match = merchantRegex.firstMatch(body);
       if (match != null) merchant = match.group(1)!.trim();
     }
 
-    // Fallback for patterns like "Raj Auto Parts credited" (Merchant before keyword)
+    // Fallback Merchant Logic
     if (merchant.isEmpty) {
-       final suffixRegex = RegExp(r'([A-Za-z0-9\s\.\-]+?)\s+(?:credited|deposited|debited)', caseSensitive: false);
-       final match = suffixRegex.firstMatch(body);
-       if (match != null) {
-         // Cleanup: remove common prefix words if caught
-         String raw = match.group(1)!.trim();
-         // If it captured the start of the message, split by common delimiters
-         final parts = raw.split(RegExp(r'[;:]'));
-         merchant = parts.last.trim();
-       }
+      final suffixRegex = RegExp(
+          r'([A-Za-z0-9\s\.\-]+?)\s+(?:credited|deposited|debited)',
+          caseSensitive: false);
+      final match = suffixRegex.firstMatch(body);
+      if (match != null) {
+        String raw = match.group(1)!.trim();
+        final parts = raw.split(RegExp(r'[;:]'));
+        merchant = parts.last.trim();
+      }
     }
 
-    // Fallback: If regex failed, use a generic name based on type
-    final noteText = merchant.isNotEmpty ? merchant : (isExpense ? "Unknown Expense" : "Unknown Deposit");
+    final noteText = merchant.isNotEmpty
+        ? merchant
+        : (isExpense ? "Unknown Expense" : "Unknown Deposit");
 
-    // 6. Category Logic
-    // Ensure "Uncategorized" exists
-    Category? uncategorized = await _dbService.isar.categorys.filter().nameEqualTo('Uncategorized').findFirst();
-    if (uncategorized == null) {
-      // Create if missing but DO NOT SAVE yet
-      uncategorized = Category()
-        ..name = 'Uncategorized'
-        ..iconCode = 'help_outline'
-        ..colorHex = 'FF9E9E9E'
-        ..isExpense = true
-        ..isDefault = true;
-      // await _dbService.addCategory(uncategorized); // REMOVED
-    }
+    // 6. Category Logic (Read-Only here)
+    // We check DB to see if Uncategorized exists so we can link it, but we don't create it here.
+    Category? uncategorized = await _dbService.isar.categorys
+        .filter()
+        .nameEqualTo('Uncategorized')
+        .findFirst();
 
-    // 7. Create & Save
+    // Note: If uncategorized is null here, we handle it by not linking,
+    // or relying on the batch method to have created it already.
+
+    // 7. Create Object
     final transaction = Transaction()
       ..amount = amount
       ..isExpense = isExpense
       ..date = DateTime.fromMillisecondsSinceEpoch(timestamp)
-      ..note = noteText // Fix: Explicitly assigning the merchant text here
+      ..note = noteText
       ..smsRawText = body
       ..smsId = '${address}_$timestamp';
 
     // Link relationships
-    transaction.category.value = uncategorized;
-    if (matchedAccount != null) {
-      transaction.account.value = matchedAccount;
+    if (uncategorized != null) {
+      transaction.category.value = uncategorized;
     }
 
-    // Check duplicates
-    final existing = await _dbService.isar.transactions.filter().smsIdEqualTo(transaction.smsId).findFirst();
-    if (existing != null) {
-       return null;
+    if (matchedAccount != null) {
+      transaction.account.value = matchedAccount;
     }
 
     return transaction;
   }
 
   Future<int> syncBatchMessages(List<SmsMessage> messages) async {
-    // Ensure Uncategorized category exists once
-    Category? uncategorized = await _dbService.isar.categorys.filter().nameEqualTo('Uncategorized').findFirst();
+    final isar = _dbService.isar;
+
+    // --- STEP 1: PRE-CHECK (Read/Write safe) ---
+    // Ensure Uncategorized category exists before we start anything.
+    Category? uncategorized =
+        await isar.categorys.filter().nameEqualTo('Uncategorized').findFirst();
     if (uncategorized == null) {
       uncategorized = Category()
         ..name = 'Uncategorized'
@@ -134,56 +135,86 @@ class SmsParserService {
         ..colorHex = 'FF9E9E9E'
         ..isExpense = true
         ..isDefault = true;
+      // We can safely call addCategory here because we are NOT in a writeTxn yet.
       await _dbService.addCategory(uncategorized);
     }
 
     final List<Transaction> transactionsToSave = [];
 
+    // --- STEP 2: PARSE (Read Only) ---
     for (final message in messages) {
-       final body = message.body ?? '';
-       final address = message.address ?? 'Unknown';
-       final date = message.date?.millisecondsSinceEpoch ?? DateTime.now().millisecondsSinceEpoch;
-       
-       final transaction = await parseSmsToTransaction(body, date, address);
-       if (transaction != null) {
-         transactionsToSave.add(transaction);
-       }
+      final body = message.body ?? '';
+      final address = message.address ?? 'Unknown';
+      final date = message.date?.millisecondsSinceEpoch ??
+          DateTime.now().millisecondsSinceEpoch;
+
+      // Check duplication (Read only)
+      final existing = await isar.transactions
+          .filter()
+          .smsIdEqualTo('${address}_$date')
+          .findFirst();
+      if (existing != null) continue;
+
+      final transaction = await parseSmsToTransaction(body, date, address);
+      if (transaction != null) {
+        // Ensure we link the fresh Uncategorized category we just fetched/created
+        if (transaction.category.value == null) {
+          transaction.category.value = uncategorized;
+        }
+        transactionsToSave.add(transaction);
+      } else {
+        // Log silent failures
+        print('Skipped SMS from $address: Body: $body');
+      }
     }
 
     if (transactionsToSave.isEmpty) return 0;
 
-    await _dbService.isar.writeTxn(() async {
+    // --- STEP 3: BATCH WRITE (Synchronous / Nuclear Option) ---
+    // We use writeTxnSync to BLOCK all other app logic while this runs.
+    // This prevents "Ghost" listeners from trying to write at the same time.
+    
+    isar.writeTxnSync(() {
       for (final txn in transactionsToSave) {
-         await _dbService.isar.transactions.put(txn);
-         await txn.category.save();
-         
-         // Handle Account Balance
-         final linkedAccount = txn.account.value;
-         if (linkedAccount != null) {
-            final freshAccount = await _dbService.isar.accounts.get(linkedAccount.id);
-            if (freshAccount != null) {
-               if (txn.isExpense) {
-                 freshAccount.currentBalance -= txn.amount;
-               } else {
-                 freshAccount.currentBalance += txn.amount;
-               }
-               await _dbService.isar.accounts.put(freshAccount);
-               txn.account.value = freshAccount;
-               await txn.account.save();
+        
+        // 1. Save Transaction (Synchronous)
+        isar.transactions.putSync(txn);
+
+        // 2. Handle Account Balance (Synchronous)
+        final linkedAccount = txn.account.value;
+        if (linkedAccount != null) {
+          // Use getSync (No await)
+          final freshAccount = isar.accounts.getSync(linkedAccount.id);
+
+          if (freshAccount != null) {
+            if (txn.isExpense) {
+              freshAccount.currentBalance -= txn.amount;
+            } else {
+              freshAccount.currentBalance += txn.amount;
             }
-         } else {
-            await txn.account.save();
-         }
+            // Use putSync (No await)
+            isar.accounts.putSync(freshAccount);
+          }
+        }
       }
     });
-    
+
     return transactionsToSave.length;
   }
 
   bool _hasKeywords(String body) {
     final keywords = [
-      'debited', 'credited', 'spent', 'deposited', 'paid', 'sent', 'received', 
-      'withdrawn', 'purchase', 'refund', 'deducted'
+      'debited',
+      'credited',
+      'spent',
+      'deposited',
+      'paid',
+      'sent',
+      'received',
+      'withdrawn',
+      'purchase',
+      'refund',
+      'deducted'
     ];
     for (var k in keywords) {
       if (body.contains(k)) return true;

@@ -73,9 +73,8 @@ class DbService {
       await isar.transactions.put(txn);
       
       // 2. Save Links (Category & Account)
-      // Important: Ensure the objects in .value are already saved in DB or save them now.
-      await txn.category.save();
-      await txn.account.save(); 
+      // Note: .put(txn) automatically handles the links if the linked objects are already managed.
+      // We do NOT call .save() here because it starts a new transaction.
 
       // 3. Update Account Balance
       // We must load the account explicitly to ensure we are modifying the DB version
@@ -107,8 +106,8 @@ class DbService {
 
     await isar.writeTxn(() async {
       await isar.transactions.put(txn);
-      await txn.account.save();
-      await txn.transferAccount.save();
+      // await txn.account.save(); // Removed: Causes nested transaction
+      // await txn.transferAccount.save(); // Removed: Causes nested transaction
 
       fromAccount.currentBalance -= amount;
       await isar.accounts.put(fromAccount);
@@ -153,8 +152,8 @@ class DbService {
 
       // 3. Update transaction
       await isar.transactions.put(txn);
-      await txn.category.save();
-      await txn.account.save();
+      // await txn.category.save(); // Removed
+      // await txn.account.save(); // Removed
     });
   }
 

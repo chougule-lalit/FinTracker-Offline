@@ -16,10 +16,10 @@ final smsSyncProvider = FutureProvider<int>((ref) async {
     throw Exception('SMS permission denied');
   }
 
-  // 2. Fetch last 50 messages
+  // 2. Fetch all messages (removed count limit)
   final messages = await smsQuery.querySms(
     kinds: [SmsQueryKind.inbox],
-    count: 50,
+    // count: 50, // Removed limit
   );
 
   final smsParser = SmsParserService();
