@@ -1,0 +1,23 @@
+{
+    "output": {
+        "style": "xml",
+        "copyToClipboard": true
+    },
+    "include": ["**/*"],
+    "ignore": [
+        "**/*.freezed.dart",
+        "**/*.g.dart",
+        "**/*.gen.dart",
+        "test/**",
+        "android/**",
+        "ios/**",
+        "web/**",
+        "macos/**",
+        "windows/**",
+        "linux/**",
+        "build/**",
+        ".dart_tool/**",
+        "assets/**",
+        "PROJECT_MASTER_SAVE.md"
+    ]
+}
