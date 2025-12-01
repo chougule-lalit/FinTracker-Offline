@@ -41,7 +41,6 @@ The content is organized as follows:
 
 <directory_structure>
 .gitignore
-CONTEXT.md
 finance_tracker_offline/.gitignore
 finance_tracker_offline/.metadata
 finance_tracker_offline/analysis_options.yaml
@@ -224,49 +223,10 @@ finance_tracker_offline/windows/runner/utils.cpp
 finance_tracker_offline/windows/runner/utils.h
 finance_tracker_offline/windows/runner/win32_window.cpp
 finance_tracker_offline/windows/runner/win32_window.h
-MENTORSHIP_LOG.md
-PROJECT_STATUS.md
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
-
-<file path="finance_tracker_offline/repomix.config.json">
-{
-    "output": {
-        "style": "xml",
-        "copyToClipboard": true
-    },
-    "include": ["**/*"],
-    "ignore": [
-        "**/*.freezed.dart",
-        "**/*.g.dart",
-        "**/*.gen.dart",
-        "test/**",
-        "android/**",
-        "ios/**",
-        "web/**",
-        "macos/**",
-        "windows/**",
-        "linux/**",
-        "build/**",
-        ".dart_tool/**",
-        "assets/**",
-        "PROJECT_MASTER_SAVE.md"
-    ]
-}
-</file>
-
-<file path="MENTORSHIP_LOG.md">
-# Project Mentorship Log
-**Project:** Priva
-**Goal:** Track architectural decisions and Flutter concepts learned.
-
-## [Date: YYYY-MM-DD]
-* **Feature:**
-* **Concept Learned:**
-* **Decision:**
-</file>
 
 <file path=".gitignore">
 # Miscellaneous
@@ -305,46 +265,6 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
-</file>
-
-<file path="CONTEXT.md">
-# Project: PrivacyFirst Money Manager (Flutter)
-# Role: Senior Flutter Developer & AI Specialist
-
-## 1. Project Goal
-Build a local-first, offline-only expense tracker that parses SMS messages.
-Target: Mimic ~90% of functionality from "Money Manager by RealByte" ([https://www.realbyteapps.com/](https://www.realbyteapps.com/)).
-PRIORITY: 100% Privacy. No internet permissions.
-
-## 2. Tech Stack
-- **Framework:** Flutter
-- **Database:** Isar Community (v3.3.0) -> Use `package:isar_community/isar.dart`
-- **State Management:** Riverpod 3.0 (Pre-release) -> Use `@Riverpod(keepAlive: true)`
-- **Navigation:** GoRouter
-- **UI:** Google Fonts, FL_Chart
-
-## 3. Architecture (Feature-First)
-lib/
-  ├── main.dart
-  ├── core/                # Shared logic (Theme, DB Helpers, Constants)
-  ├── features/
-  │   ├── dashboard/       # Home screen (Charts, Recent list)
-  │   ├── add_transaction/ # Input screen
-  │   ├── sms_parser/      # Logic to read and parse SMS
-  │   └── settings/        # Backup, Theme toggle
-  └── models/              # Isar Collections (Transaction, Category)
-
-## 4. Coding Rules
-1. **Always** use `flutter_riverpod` annotations.
-2. **Never** use `package:isar/isar.dart`. Use `isar_community` instead.
-3. **WriteAsync:** Use `isar.writeTxn(...)` for writing data.
-4. **No Cloud:** Do not add Firebase/HTTP.
-
-## 5. Current Progress Status
-- [x] Project Created
-- [x] Database Configured (Isar Community)
-- [x] Models Created & Generated (.g.dart files exist)
-- [ ] DbService Class (Next Task)
 </file>
 
 <file path="finance_tracker_offline/.gitignore">
@@ -2015,49 +1935,6 @@ class ReceiptService {
 }
 </file>
 
-<file path="finance_tracker_offline/lib/core/services/settings_service.dart">
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-part 'settings_service.g.dart';
-
-@Riverpod(keepAlive: true)
-SharedPreferences sharedPreferences(Ref ref) => throw UnimplementedError();
-
-@Riverpod(keepAlive: true)
-SettingsService settingsService(Ref ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return SettingsService(prefs);
-}
-
-class SettingsService {
-  final SharedPreferences _prefs;
-
-  SettingsService(this._prefs);
-
-  static const String _currencyCodeKey = 'currency_code';
-  static const String _currencySymbolKey = 'currency_symbol';
-
-  Future<void> setCurrency(String code, String symbol) async {
-    await _prefs.setString(_currencyCodeKey, code);
-    await _prefs.setString(_currencySymbolKey, symbol);
-  }
-
-  String getCurrencySymbol() {
-    return _prefs.getString(_currencySymbolKey) ?? "₹";
-  }
-
-  String getCurrencyCode() {
-    return _prefs.getString(_currencyCodeKey) ?? "INR";
-  }
-
-  Future<void> clearAll() async {
-    await _prefs.clear();
-  }
-}
-</file>
-
 <file path="finance_tracker_offline/lib/core/services/settings_service.g.dart">
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
@@ -2261,219 +2138,6 @@ class AccountDetailScreen extends ConsumerWidget {
             },
           );
         },
-      ),
-    );
-  }
-}
-</file>
-
-<file path="finance_tracker_offline/lib/features/accounts/add_account_screen.dart">
-import 'package:finance_tracker_offline/core/database/db_service.dart';
-import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
-import 'package:finance_tracker_offline/models/account.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-class AddAccountScreen extends ConsumerStatefulWidget {
-  const AddAccountScreen({super.key});
-
-  @override
-  ConsumerState<AddAccountScreen> createState() => _AddAccountScreenState();
-}
-
-class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _lastFourDigitsController = TextEditingController();
-  final _initialBalanceController = TextEditingController();
-  
-  String _selectedType = 'Bank';
-  String _selectedColor = 'FF42A5F5'; // Default Blue
-
-  final List<String> _accountTypes = ['Cash', 'Bank', 'Card'];
-  
-  final List<Map<String, String>> _colors = [
-    {'name': 'Blue', 'hex': 'FF42A5F5'},
-    {'name': 'Red', 'hex': 'FFEF5350'},
-    {'name': 'Green', 'hex': 'FF66BB6A'},
-    {'name': 'Orange', 'hex': 'FFFFA726'},
-    {'name': 'Purple', 'hex': 'FFAB47BC'},
-    {'name': 'Teal', 'hex': 'FF26A69A'},
-    {'name': 'Brown', 'hex': 'FF8D6E63'},
-    {'name': 'Grey', 'hex': 'FF78909C'},
-  ];
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _lastFourDigitsController.dispose();
-    _initialBalanceController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveAccount() async {
-    if (_formKey.currentState!.validate()) {
-      final name = _nameController.text.trim();
-      final lastFourDigits = _lastFourDigitsController.text.trim();
-      final initialBalance = double.tryParse(_initialBalanceController.text) ?? 0.0;
-
-      final account = Account()
-        ..name = name
-        ..type = _selectedType
-        ..lastFourDigits = lastFourDigits.isNotEmpty ? lastFourDigits : null
-        ..initialBalance = initialBalance
-        ..currentBalance = initialBalance // Initially same as initial balance
-        ..colorHex = _selectedColor;
-
-      await ref.read(dbServiceProvider).addAccount(account);
-      
-      // Refresh the list
-      ref.invalidate(accountsProvider);
-
-      if (mounted) {
-        context.pop();
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Account'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Account Name',
-                  hintText: 'e.g., HDFC Salary',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Account Type',
-                  border: OutlineInputBorder(),
-                ),
-                items: _accountTypes.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedType = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _lastFourDigitsController,
-                decoration: const InputDecoration(
-                  labelText: 'SMS Matching Digits',
-                  hintText: 'Last 4 digits of account/card',
-                  border: OutlineInputBorder(),
-                  counterText: "",
-                ),
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _initialBalanceController,
-                decoration: const InputDecoration(
-                  labelText: 'Initial Balance',
-                  border: OutlineInputBorder(),
-                  prefixText: '₹ ',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter initial balance';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Please enter a valid number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Color',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _colors.map((color) {
-                  final isSelected = _selectedColor == color['hex'];
-                  final colorValue = int.parse(color['hex']!, radix: 16);
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedColor = color['hex']!;
-                      });
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Color(colorValue),
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? Border.all(color: Colors.black, width: 3)
-                            : null,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white)
-                          : null,
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _saveAccount,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'Save Account',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -2742,121 +2406,6 @@ final transactionListProvider = StreamProvider<List<Transaction>>((ref) {
 });
 </file>
 
-<file path="finance_tracker_offline/lib/features/dashboard/widgets/balance_card.dart">
-import 'package:finance_tracker_offline/theme/app_colors.dart';
-import 'package:flutter/material.dart';
-
-class BalanceCard extends StatelessWidget {
-  const BalanceCard({
-    super.key,
-    required this.totalBalance,
-    required this.totalIncome,
-    required this.totalExpense,
-    required this.currencySymbol,
-  });
-
-  final double totalBalance;
-  final double totalIncome;
-  final double totalExpense;
-  final String currencySymbol;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Total Balance',
-            style: TextStyle(
-              color: AppColors.secondaryGrey,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$currencySymbol${totalBalance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: AppColors.primaryBlack,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSummaryItem(
-                context,
-                label: 'Income',
-                amount: totalIncome,
-                color: AppColors.primaryBlack,
-                icon: Icons.arrow_downward,
-              ),
-              Container(
-                height: 40,
-                width: 1,
-                color: AppColors.divider,
-              ),
-              _buildSummaryItem(
-                context,
-                label: 'Expenses',
-                amount: totalExpense,
-                color: AppColors.expenseRed,
-                icon: Icons.arrow_upward,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryItem(
-    BuildContext context, {
-    required String label,
-    required double amount,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: AppColors.secondaryGrey),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.secondaryGrey,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$currencySymbol${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
 <file path="finance_tracker_offline/lib/features/settings/providers/backup_provider.dart">
 import 'package:finance_tracker_offline/core/database/db_service.dart';
 import 'package:finance_tracker_offline/core/services/backup_service.dart';
@@ -2924,38 +2473,6 @@ final class BackupServiceProvider
 }
 
 String _$backupServiceHash() => r'af66db0705566d0ccc316b148a56a87711c7a869';
-</file>
-
-<file path="finance_tracker_offline/lib/features/settings/providers/settings_provider.dart">
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:finance_tracker_offline/core/services/settings_service.dart';
-
-part 'settings_provider.g.dart';
-
-class SettingsState {
-  final String currencySymbol;
-  final String currencyCode;
-
-  SettingsState({required this.currencySymbol, required this.currencyCode});
-}
-
-@riverpod
-class SettingsNotifier extends _$SettingsNotifier {
-  @override
-  SettingsState build() {
-    final service = ref.watch(settingsServiceProvider);
-    return SettingsState(
-      currencySymbol: service.getCurrencySymbol(),
-      currencyCode: service.getCurrencyCode(),
-    );
-  }
-
-  Future<void> updateCurrency(String code, String symbol) async {
-    final service = ref.read(settingsServiceProvider);
-    await service.setCurrency(code, symbol);
-    state = SettingsState(currencySymbol: symbol, currencyCode: code);
-  }
-}
 </file>
 
 <file path="finance_tracker_offline/lib/features/settings/providers/settings_provider.g.dart">
@@ -3657,128 +3174,6 @@ final monthlyStatsProvider = FutureProvider<List<CategoryStat>>((ref) async {
 });
 </file>
 
-<file path="finance_tracker_offline/lib/features/stats/widgets/date_filter_controls.dart">
-import 'package:finance_tracker_offline/features/stats/models/date_filter_type.dart';
-import 'package:finance_tracker_offline/features/stats/providers/date_filter_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-
-class DateFilterControls extends ConsumerWidget {
-  const DateFilterControls({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final filterState = ref.watch(dateFilterProvider);
-    final notifier = ref.read(dateFilterProvider.notifier);
-
-    String dateText = _getDateText(filterState);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        children: [
-          // Filter Type Dropdown
-          DropdownButton<DateFilterType>(
-            value: filterState.type,
-            underline: Container(), // Remove underline
-            onChanged: (DateFilterType? newValue) {
-              if (newValue != null) {
-                notifier.setFilterType(newValue);
-              }
-            },
-            items: DateFilterType.values.map((DateFilterType type) {
-              return DropdownMenuItem<DateFilterType>(
-                value: type,
-                child: Text(type.label),
-              );
-            }).toList(),
-          ),
-          
-          const Spacer(),
-
-          // Navigator
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: filterState.type == DateFilterType.custom
-                    ? null
-                    : () => notifier.previous(),
-              ),
-              InkWell(
-                onTap: filterState.type == DateFilterType.custom
-                    ? () => _pickDateRange(context, notifier, filterState)
-                    : null,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                  child: Text(
-                    dateText,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: filterState.type == DateFilterType.custom
-                    ? null
-                    : () => notifier.next(),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getDateText(DateFilterState state) {
-    switch (state.type) {
-      case DateFilterType.monthly:
-        return DateFormat('MMMM yyyy').format(state.referenceDate);
-      case DateFilterType.yearly:
-        return DateFormat('yyyy').format(state.referenceDate);
-      case DateFilterType.weekly:
-        final start = state.startDate;
-        final end = state.endDate;
-        if (start.month == end.month) {
-          return '${DateFormat('MMM d').format(start)} - ${DateFormat('d').format(end)}';
-        } else {
-          return '${DateFormat('MMM d').format(start)} - ${DateFormat('MMM d').format(end)}';
-        }
-      case DateFilterType.custom:
-        final start = state.customStart;
-        final end = state.customEnd;
-        if (start == null || end == null) {
-          return 'Select Range';
-        }
-        return '${DateFormat('MMM d').format(start)} - ${DateFormat('MMM d').format(end)}';
-    }
-  }
-
-  Future<void> _pickDateRange(
-      BuildContext context, DateFilter notifier, DateFilterState state) async {
-    final initialDateRange = state.customStart != null && state.customEnd != null
-        ? DateTimeRange(start: state.customStart!, end: state.customEnd!)
-        : null;
-
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      initialDateRange: initialDateRange,
-    );
-
-    if (picked != null) {
-      notifier.setCustomRange(picked.start, picked.end);
-    }
-  }
-}
-</file>
-
 <file path="finance_tracker_offline/lib/features/stats/widgets/expense_pie_chart.dart">
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -3912,123 +3307,6 @@ class _Badge extends StatelessWidget {
       case 'pets': return Icons.pets;
       default: return Icons.category;
     }
-  }
-}
-</file>
-
-<file path="finance_tracker_offline/lib/features/stats/widgets/stats_category_view.dart">
-import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
-import 'package:finance_tracker_offline/features/stats/category_detail_screen.dart';
-import 'package:finance_tracker_offline/models/category.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/monthly_stats_provider.dart';
-
-class StatsCategoryView extends ConsumerWidget {
-  final TransactionType type;
-
-  const StatsCategoryView({
-    required this.type,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final statsAsync = ref.watch(statsProvider(type));
-
-    return statsAsync.when(
-      data: (stats) {
-        if (stats.isEmpty) {
-          return const Center(
-            child: Text('No Data for this Period'),
-          );
-        }
-
-        return Column(
-          children: [
-            // Top Section: Pie Chart
-            SizedBox(
-              height: 250,
-              child: PieChart(
-                PieChartData(
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 40,
-                  sections: stats.map((stat) {
-                    final isLarge = stat.percentage > 3;
-                    return PieChartSectionData(
-                      color: stat.color,
-                      value: stat.totalAmount,
-                      title: isLarge ? '${stat.percentage.toStringAsFixed(1)}%' : '',
-                      radius: 50,
-                      titlePositionPercentageOffset: 1.4,
-                      showTitle: true,
-                      titleStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Bottom Section: List
-            Expanded(
-              child: ListView.builder(
-                itemCount: stats.length,
-                itemBuilder: (context, index) {
-                  final stat = stats[index];
-                  return InkWell(
-                    onTap: () {
-                      // We need to reconstruct the Category object or pass ID
-                      // Since CategoryStat only has name/color/icon, we might need to fetch or pass full object
-                      // For now, let's assume we can find it or pass minimal info.
-                      // Ideally, CategoryStat should hold the Category ID or object.
-                      // Let's update CategoryStat to hold the Category object if possible, or just ID.
-                      // Assuming we update CategoryStat to hold the Category object:
-                      if (stat.category != null) {
-                         Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CategoryDetailScreen(category: stat.category!),
-                          ),
-                        );
-                      }
-                    },
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: stat.color,
-                        child: Text(
-                          '${stat.percentage.round()}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      title: Text(stat.categoryName),
-                      trailing: Text(
-                        '${settings.currencySymbol} ${stat.totalAmount.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
-    );
   }
 }
 </file>
@@ -5233,112 +4511,6 @@ extension AccountQueryProperty
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
     });
-  }
-}
-</file>
-
-<file path="finance_tracker_offline/lib/theme/app_colors.dart">
-import 'package:flutter/material.dart';
-
-class AppColors {
-  static const Color scaffoldBackground = Colors.white; // Changed to White
-  static const Color cardSurface = Color(0xFFF7F7F9); // Added Light Cool Grey
-  static const Color surface = Colors.white; // The card background
-  static const Color primaryBlack = Color(0xFF1C1C1E); // Headings, Main Text
-  static const Color secondaryGrey = Color(0xFF8E8E93); // Subtitles, Icons
-  static const Color expenseRed = Color(0xFFFF453A); // The "Red" from the screenshots (Slightly soft)
-  static const Color incomeGreen = Color(0xFF32D74B); // Standard iOS Green (for consistency)
-  static const Color brandPrimary = Color(0xFF1C1C1E); // Buttons are Black in the design
-  static const Color divider = Color(0xFFE5E5EA);
-}
-</file>
-
-<file path="finance_tracker_offline/lib/theme/app_theme.dart">
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
-
-class AppTheme {
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.scaffoldBackground,
-      
-      // AppBar Theme
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.scaffoldBackground,
-        elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.primaryBlack),
-        titleTextStyle: TextStyle(
-          color: AppColors.primaryBlack,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-
-      // Card Theme
-      cardTheme: CardThemeData(
-        color: AppColors.surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-
-      // Input Decoration Theme
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryBlack, width: 1),
-        ),
-        contentPadding: const EdgeInsets.all(16),
-        hintStyle: const TextStyle(color: AppColors.secondaryGrey),
-      ),
-
-      // Elevated Button Theme
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.brandPrimary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          minimumSize: const Size(double.infinity, 50),
-          elevation: 0,
-        ),
-      ),
-
-      // Typography
-      textTheme: GoogleFonts.interTextTheme().apply(
-        bodyColor: AppColors.primaryBlack,
-        displayColor: AppColors.primaryBlack,
-      ),
-      
-      // Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
-        thickness: 1,
-      ),
-      
-      // Color Scheme
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.brandPrimary,
-        surface: AppColors.surface,
-        primary: AppColors.brandPrimary,
-        secondary: AppColors.secondaryGrey,
-      ),
-    );
   }
 }
 </file>
@@ -7242,6 +6414,32 @@ For help getting started with Flutter development, view the
 samples, guidance on mobile development, and a full API reference.
 </file>
 
+<file path="finance_tracker_offline/repomix.config.json">
+{
+    "output": {
+        "style": "xml",
+        "copyToClipboard": true
+    },
+    "include": ["**/*"],
+    "ignore": [
+        "**/*.freezed.dart",
+        "**/*.g.dart",
+        "**/*.gen.dart",
+        "test/**",
+        "android/**",
+        "ios/**",
+        "web/**",
+        "macos/**",
+        "windows/**",
+        "linux/**",
+        "build/**",
+        ".dart_tool/**",
+        "assets/**",
+        "PROJECT_MASTER_SAVE.md"
+    ]
+}
+</file>
+
 <file path="finance_tracker_offline/test/widget_test.dart">
 // This is a basic Flutter widget test.
 //
@@ -8460,138 +7658,6 @@ class Win32Window {
 #endif  // RUNNER_WIN32_WINDOW_H_
 </file>
 
-<file path="PROJECT_STATUS.md">
-# Project Status: FinTracker-Offline
-
-## 1. Project Overview
-**FinTracker-Offline** is a privacy-first, offline-only personal finance application built with Flutter. It automatically tracks expenses and income by reading and parsing transaction SMS messages directly on the device. The core value proposition is providing automated financial insights without ever sending sensitive data to the cloud, ensuring complete user privacy. It is targeted primarily at Android users who rely on SMS transaction alerts.
-
-## 2. Current Development Status
-**Summary:** The project has a solid foundation with a working database, state management, and a regex-based SMS parser. The core UI structure is in place.
-
-*   **Implemented:**
-    *   **Project Structure:** Clean architecture with feature-based folders.
-    *   **Database:** Isar database set up with `Transaction`, `Category`, and `Account` models.
-    *   **SMS Reading:** Integration with `flutter_sms_inbox` to read messages.
-    *   **Basic Parsing:** A Regex-based service (`SmsParserService`) that extracts amounts, detects transaction type (debit/credit), and attempts to identify merchants.
-    *   **State Management:** Riverpod v3 setup with `ProviderScope`.
-    *   **Navigation:** GoRouter configuration.
-*   **Partially Implemented:**
-    *   **Categorization:** Currently defaults to "Uncategorized" or basic logic; no intelligent categorization yet.
-    *   **Dashboard:** Basic screen structure exists.
-*   **Not Touched:**
-    *   **LLM Integration:** No on-device LLM runtime or model integration is currently present.
-    *   **Advanced Insights/Charts:** `fl_chart` is in dependencies but complex charts are not yet implemented.
-    *   **Budgets:** No budget modeling or UI.
-
-## 3. Tech Stack
-*   **Flutter Version:** `^3.5.0`
-*   **State Management:** `flutter_riverpod` (v3.0.0-dev), `riverpod_annotation`
-*   **Local Database:** `isar_community` (v3.3.0)
-*   **SMS Reading:** `flutter_sms_inbox`
-*   **LLM Runtime:** **Undecided** (Not yet implemented)
-*   **Target Platforms:** Android (Primary due to SMS features)
-*   **Minimum Supported Android Version:** Default Flutter Min SDK (likely API 21)
-*   **Key 3rd Party Packages:** `go_router`, `fl_chart`, `google_fonts`, `intl`, `permission_handler`, `shared_preferences`.
-
-## 4. App Constraints / Requirements
-*   **Offline-Only:** The app must function 100% without an internet connection.
-*   **Privacy:** No financial data should leave the device.
-*   **Permissions:** Requires `READ_SMS` and storage permissions.
-*   **Performance:** Must run efficiently on mobile devices; LLM inference must not drain battery excessively or freeze the UI.
-*   **APK Size:** Should be optimized, though bundling an LLM will increase size significantly.
-
-## 5. Current Folder Structure
-```
-lib/
-  core/
-    database/
-    router/
-    services/
-    utils/
-    widgets/
-  features/
-    accounts/
-    add_transaction/
-    dashboard/
-    settings/
-    sms_parser/
-      providers/
-      services/
-    stats/
-  models/
-    account.dart
-    category.dart
-    transaction.dart
-  theme/
-  main.dart
-```
-
-## 6. Database Models
-*   **Transaction**:
-    *   `id` (AutoIncrement)
-    *   `amount` (double)
-    *   `note` (String)
-    *   `date` (DateTime)
-    *   `isExpense` (bool)
-    *   `isTransfer` (bool)
-    *   `smsRawText` (String?)
-    *   `smsId` (String?)
-    *   `receiptPath` (String?)
-    *   Links: `category`, `account`, `transferAccount`
-*   **Category**:
-    *   `name`, `iconCode`, `colorHex`, `isExpense`, `isDefault`
-*   **Account**:
-    *   Used for linking transactions to specific bank accounts (via SMS digits).
-
-## 7. Current LLM Usage
-*   **Status:** **None**.
-*   **Current Logic:** The app currently uses `SmsParserService` which relies on `RegExp` to find keywords like "debited", "credited", and extract amounts.
-*   **Planned Role:** The LLM is intended to replace or augment the Regex parser to:
-    *   Handle complex SMS formats.
-    *   Intelligently categorize transactions based on merchant names.
-    *   Provide natural language insights (e.g., "How much did I spend on food?").
-
-## 8. Planned Features (Your Vision)
-*   [x] SMS parsing (Basic Regex implemented)
-*   [ ] Categorization (Intelligent/LLM based)
-*   [ ] Monthly summary
-*   [ ] Insights
-*   [ ] Charts
-*   [ ] Budgets
-*   [ ] Natural language search
-*   [ ] On-device LLM integration
-*   [ ] Scam SMS detection
-*   [ ] Subscription detection
-*   [ ] Chat with your finances
-*   [ ] Export/Import
-
-## 9. Pain Points / Open Questions
-*   **LLM Integration Strategy:** How to bundle and run a model (e.g., Gemma 2B or Phi-3) on Android via Flutter without making the APK huge or the app slow.
-*   **Model Selection:** Choosing a model that is small enough for mobile but smart enough for JSON extraction/classification.
-*   **Regex Fragility:** The current regex parser fails on non-standard SMS formats; moving to LLM is critical for robustness.
-
-## 10. Your Preferred LLM Model (for on-device use)
-**Recommendation: Gemma 2 (2B) or Phi-3 Mini (3.8B)**
-
-*   **Gemma 2 (2B):**
-    *   *Pros:* Extremely lightweight, Google-optimized, likely sufficient for extraction tasks.
-    *   *Cons:* Less reasoning capability than larger models.
-*   **Phi-3 Mini (3.8B):**
-    *   *Pros:* Excellent performance-to-size ratio, very capable of instruction following.
-    *   *Cons:* Slightly heavier on RAM/Storage than Gemma 2B.
-*   **Runtime Choice:** `mediapipe_genai` (Google) or `llama_cpp_dart` are strong candidates.
-
-## 11. App Goals for the Next 30 Days (High-Level)
-*   **Select and Integrate LLM Runtime:** Choose between MediaPipe or Llama.cpp and get a "Hello World" inference running.
-*   **Replace/Augment Regex Parser:** Feed raw SMS text to the LLM and get structured JSON output (Amount, Merchant, Category).
-*   **Build Dashboard UI:** Visualize the parsed data with `fl_chart`.
-*   **Implement Categories:** Create a default set of categories and allow the LLM to map transactions to them.
-
-## 12. Anything Else I Should Know
-The project is using the "Verified Community Fork" of Isar (`isar_community`), which is excellent for long-term maintenance. The state management is cutting-edge (Riverpod v3), so the codebase is modern. The immediate next big step is the technical hurdle of on-device AI.
-</file>
-
 <file path="finance_tracker_offline/android/app/build.gradle.kts">
 import java.util.Properties
 import java.io.FileInputStream
@@ -8718,287 +7784,231 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 </file>
 
-<file path="finance_tracker_offline/lib/core/router/scaffold_with_nav_bar.dart">
-import 'package:finance_tracker_offline/theme/app_colors.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+<file path="finance_tracker_offline/lib/core/services/settings_service.dart">
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class ScaffoldWithNavBar extends StatelessWidget {
-  const ScaffoldWithNavBar({
-    required this.child,
+part 'settings_service.g.dart';
+
+@Riverpod(keepAlive: true)
+SharedPreferences sharedPreferences(Ref ref) => throw UnimplementedError();
+
+@Riverpod(keepAlive: true)
+SettingsService settingsService(Ref ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return SettingsService(prefs);
+}
+
+class SettingsService {
+  final SharedPreferences _prefs;
+
+  SettingsService(this._prefs);
+
+  static const String _currencyCodeKey = 'currency_code';
+  static const String _currencySymbolKey = 'currency_symbol';
+  static const String _themeModeKey = 'theme_mode';
+
+  Future<void> setCurrency(String code, String symbol) async {
+    await _prefs.setString(_currencyCodeKey, code);
+    await _prefs.setString(_currencySymbolKey, symbol);
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    await _prefs.setString(_themeModeKey, mode);
+  }
+
+  String getCurrencySymbol() {
+    return _prefs.getString(_currencySymbolKey) ?? "₹";
+  }
+
+  String getCurrencyCode() {
+    return _prefs.getString(_currencyCodeKey) ?? "INR";
+  }
+
+  String getThemeMode() {
+    return _prefs.getString(_themeModeKey) ?? "system";
+  }
+
+  Future<void> clearAll() async {
+    await _prefs.clear();
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/settings/providers/settings_provider.dart">
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:finance_tracker_offline/core/services/settings_service.dart';
+import 'package:flutter/material.dart';
+
+part 'settings_provider.g.dart';
+
+class SettingsState {
+  final String currencySymbol;
+  final String currencyCode;
+  final ThemeMode themeMode;
+
+  SettingsState({
+    required this.currencySymbol,
+    required this.currencyCode,
+    required this.themeMode,
+  });
+}
+
+@riverpod
+class SettingsNotifier extends _$SettingsNotifier {
+  @override
+  SettingsState build() {
+    final service = ref.watch(settingsServiceProvider);
+    final themeString = service.getThemeMode();
+    
+    ThemeMode mode;
+    if (themeString == 'dark') {
+      mode = ThemeMode.dark;
+    } else if (themeString == 'light') {
+      mode = ThemeMode.light;
+    } else {
+      mode = ThemeMode.system;
+    }
+
+    return SettingsState(
+      currencySymbol: service.getCurrencySymbol(),
+      currencyCode: service.getCurrencyCode(),
+      themeMode: mode,
+    );
+  }
+
+  Future<void> updateCurrency(String code, String symbol) async {
+    final service = ref.read(settingsServiceProvider);
+    await service.setCurrency(code, symbol);
+    state = SettingsState(
+      currencySymbol: symbol,
+      currencyCode: code,
+      themeMode: state.themeMode,
+    );
+  }
+
+  Future<void> toggleTheme(bool isDark) async {
+    final service = ref.read(settingsServiceProvider);
+    final mode = isDark ? ThemeMode.dark : ThemeMode.light;
+    await service.setThemeMode(isDark ? 'dark' : 'light');
+    state = SettingsState(
+      currencySymbol: state.currencySymbol,
+      currencyCode: state.currencyCode,
+      themeMode: mode,
+    );
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/stats/widgets/stats_category_view.dart">
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/features/stats/category_detail_screen.dart';
+import 'package:finance_tracker_offline/models/category.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../providers/monthly_stats_provider.dart';
+
+class StatsCategoryView extends ConsumerWidget {
+  final TransactionType type;
+
+  const StatsCategoryView({
+    required this.type,
     super.key,
   });
 
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey[200]!)),
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primaryBlack,
-          unselectedItemColor: AppColors.secondaryGrey,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          currentIndex: _calculateSelectedIndex(context),
-          onTap: (int idx) => _onItemTapped(idx, context),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long),
-              label: 'Trans.',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart),
-              label: 'Stats',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet),
-              label: 'Accounts',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/stats')) {
-      return 1;
-    }
-    if (location.startsWith('/accounts')) {
-      return 2;
-    }
-    if (location.startsWith('/settings')) {
-      return 3;
-    }
-    return 0;
-  }
-
-  void _onItemTapped(int index, BuildContext context) {
-    switch (index) {
-      case 0:
-        context.go('/');
-        break;
-      case 1:
-        context.go('/stats');
-        break;
-      case 2:
-        context.go('/accounts');
-        break;
-      case 3:
-        context.go('/settings');
-        break;
-    }
-  }
-}
-</file>
-
-<file path="finance_tracker_offline/lib/features/settings/settings_screen.dart">
-import 'package:finance_tracker_offline/features/settings/providers/backup_provider.dart';
-import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final statsAsync = ref.watch(statsProvider(type));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: ListView(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.currency_exchange),
-            title: const Text('Currency'),
-            subtitle: Text('${settings.currencyCode} (${settings.currencySymbol})'),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => SimpleDialog(
-                  title: const Text('Select Currency'),
-                  children: [
-                    _buildCurrencyOption(context, ref, 'INR', '₹'),
-                    _buildCurrencyOption(context, ref, 'USD', '\$'),
-                    _buildCurrencyOption(context, ref, 'EUR', '€'),
-                    _buildCurrencyOption(context, ref, 'GBP', '£'),
-                  ],
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.save_alt),
-            title: const Text('Backup Data'),
-            subtitle: const Text('Export data to JSON'),
-            onTap: () async {
-              try {
-                await ref.read(backupServiceProvider).createBackup();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Backup file generated')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Backup failed: $e')),
-                  );
-                }
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.restore),
-            title: const Text('Restore Data'),
-            subtitle: const Text('Import JSON and replace DB'),
-            onTap: () => _confirmRestore(context, ref),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmRestore(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Warning: Data Loss'),
-        content: const Text(
-            'This will wipe all current data and replace it with the backup. Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Restore', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Restoring...')),
-        );
-
-        final success = await ref.read(backupServiceProvider).restoreBackup();
-
-        if (context.mounted) {
-          if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Data restored successfully')),
-            );
-          } else {
-            // User cancelled file picker
-          }
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Restore failed: $e')),
+    return statsAsync.when(
+      data: (stats) {
+        if (stats.isEmpty) {
+          return Center(
+            child: Text('No Data for this Period', style: GoogleFonts.poppins()),
           );
         }
-      }
-    }
-  }
 
-  Widget _buildCurrencyOption(
-    BuildContext context,
-    WidgetRef ref,
-    String code,
-    String symbol,
-  ) {
-    return SimpleDialogOption(
-      onPressed: () {
-        ref.read(settingsProvider.notifier).updateCurrency(code, symbol);
-        Navigator.pop(context);
-      },
-      child: Text('$code ($symbol)'),
-    );
-  }
-}
-</file>
-
-<file path="finance_tracker_offline/lib/features/stats/stats_screen.dart">
-import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
-import 'package:finance_tracker_offline/features/stats/models/category_stat.dart';
-import 'package:finance_tracker_offline/features/stats/widgets/date_filter_controls.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'providers/monthly_stats_provider.dart';
-import 'widgets/stats_category_view.dart';
-
-class StatsScreen extends ConsumerWidget {
-  const StatsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final expenseAsync = ref.watch(statsProvider(TransactionType.expense));
-    final incomeAsync = ref.watch(statsProvider(TransactionType.income));
-
-    double calculateTotal(AsyncValue<List<CategoryStat>> asyncValue) {
-      return asyncValue.maybeWhen(
-        data: (stats) => stats.fold(0.0, (sum, item) => sum + item.totalAmount),
-        orElse: () => 0.0,
-      );
-    }
-
-    final expenseTotal = calculateTotal(expenseAsync);
-    final incomeTotal = calculateTotal(incomeAsync);
-
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Statistics'),
-        ),
-        body: Column(
+        return Column(
           children: [
-            const DateFilterControls(),
-            // TabBar
-            Material(
-              color: Colors.transparent,
-              child: TabBar(
-                labelColor: Theme.of(context).primaryColor,
-                unselectedLabelColor: Colors.grey,
-                tabs: [
-                  Tab(text: 'Expense (${settings.currencySymbol} ${expenseTotal.toStringAsFixed(0)})'),
-                  Tab(text: 'Income (${settings.currencySymbol} ${incomeTotal.toStringAsFixed(0)})'),
-                ],
+            // Top Section: Pie Chart
+            SizedBox(
+              height: 250,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  sections: stats.map((stat) {
+                    final isLarge = stat.percentage > 3;
+                    return PieChartSectionData(
+                      color: stat.color,
+                      value: stat.totalAmount,
+                      title: isLarge ? '${stat.percentage.toStringAsFixed(1)}%' : '',
+                      radius: 50,
+                      titlePositionPercentageOffset: 1.4,
+                      showTitle: true,
+                      titleStyle: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
-            // TabBarView
-            const Expanded(
-              child: TabBarView(
-                children: [
-                  StatsCategoryView(type: TransactionType.expense),
-                  StatsCategoryView(type: TransactionType.income),
-                ],
+            const SizedBox(height: 16),
+            // Bottom Section: List
+            Expanded(
+              child: ListView.builder(
+                itemCount: stats.length,
+                itemBuilder: (context, index) {
+                  final stat = stats[index];
+                  return InkWell(
+                    onTap: () {
+                      if (stat.category != null) {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CategoryDetailScreen(category: stat.category!),
+                          ),
+                        );
+                      }
+                    },
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: stat.color,
+                        child: Text(
+                          '${stat.percentage.round()}%',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(stat.categoryName, style: GoogleFonts.poppins()),
+                      trailing: Text(
+                        '${settings.currencySymbol} ${stat.totalAmount.toStringAsFixed(2)}',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error', style: GoogleFonts.poppins())),
     );
   }
 }
@@ -9946,6 +8956,37 @@ extension CategoryQueryProperty
 }
 </file>
 
+<file path="finance_tracker_offline/lib/theme/app_colors.dart">
+import 'package:flutter/material.dart';
+
+class AppColors {
+  // --- NEW DESIGN TOKENS (From Screenshots) ---
+  static const Color brandRed = Color(0xFFF63C3A); 
+  static const Color brandDark = Color(0xFF191908); 
+  static const Color brandBeige = Color(0xFFD6D4CE); 
+  static const Color brandWhite = Color(0xFFFFFFFF);
+
+  // --- MAPPING OLD NAMES TO NEW DESIGN (Fixes Lint Errors) ---
+  
+  // Backgrounds
+  static const Color scaffoldBackground = brandBeige; // Was White
+  static const Color cardSurface = brandWhite; // Was Light Grey
+  static const Color surface = brandWhite; 
+  
+  // Text & Icons
+  static const Color primaryBlack = brandDark; // Was #1C1C1E
+  static const Color secondaryGrey = Color(0xFF8E8E93); // Kept same
+  
+  // Financials
+  static const Color expenseRed = brandRed; // Updated to new Red
+  static const Color incomeGreen = Color(0xFF32D74B); // Kept same
+  
+  // UI Elements
+  static const Color brandPrimary = brandDark; // Buttons are now Dark
+  static const Color divider = Color(0xFFE5E5EA);
+}
+</file>
+
 <file path="finance_tracker_offline/linux/flutter/generated_plugin_registrant.cc">
 //
 //  Generated file. Do not edit.
@@ -10079,239 +9120,119 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
 </manifest>
 </file>
 
-<file path="finance_tracker_offline/lib/features/accounts/accounts_screen.dart">
-import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
-import 'package:finance_tracker_offline/features/accounts/account_detail_screen.dart';
-import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
-import 'package:finance_tracker_offline/models/account.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-
-class AccountsScreen extends ConsumerWidget {
-  const AccountsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final accountsAsync = ref.watch(accountsProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accounts'),
-      ),
-      body: accountsAsync.when(
-        data: (accounts) {
-          if (accounts.isEmpty) {
-            return const Center(
-              child: Text('No accounts added yet.'),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(8),
-            itemCount: accounts.length,
-            itemBuilder: (context, index) {
-              final account = accounts[index];
-              return AccountCard(account: account);
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add_account'),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class AccountCard extends ConsumerWidget {
-  final Account account;
-
-  const AccountCard({super.key, required this.account});
-
-  IconData _getIconForType(String type) {
-    switch (type) {
-      case 'Bank':
-        return Icons.account_balance;
-      case 'Card':
-        return Icons.credit_card;
-      case 'Cash':
-        return Icons.money;
-      default:
-        return Icons.account_balance_wallet;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final color = Color(int.parse(account.colorHex, radix: 16));
-
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AccountDetailScreen(account: account),
-            ),
-          );
-        },
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(
-            _getIconForType(account.type),
-            color: color,
-          ),
-        ),
-        title: Text(
-          account.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: account.lastFourDigits != null
-            ? Text('Ends in: ${account.lastFourDigits}')
-            : null,
-        trailing: Text(
-          '${settings.currencySymbol} ${account.currentBalance.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: account.currentBalance >= 0 ? Colors.green : Colors.red,
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="finance_tracker_offline/lib/features/dashboard/widgets/transaction_card.dart">
-import 'package:finance_tracker_offline/core/utils/icon_utils.dart';
-import 'package:finance_tracker_offline/core/widgets/full_screen_image_viewer.dart';
-import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
-import 'package:finance_tracker_offline/models/transaction.dart';
+<file path="finance_tracker_offline/lib/features/dashboard/widgets/balance_card.dart">
 import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class TransactionCard extends ConsumerWidget {
-  const TransactionCard({
-    required this.transaction,
+class BalanceCard extends StatelessWidget {
+  const BalanceCard({
     super.key,
+    required this.totalBalance,
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.currencySymbol,
   });
 
-  final Transaction transaction;
+  final double totalBalance;
+  final double totalIncome;
+  final double totalExpense;
+  final String currencySymbol;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final category = transaction.category.value;
-    final isTransfer = transaction.isTransfer;
-    final isExpense = transaction.isExpense;
-
-    // 1. Color Logic
-    final Color amountColor;
-    if (isTransfer) {
-      amountColor = AppColors.primaryBlack;
-    } else {
-      amountColor = isExpense ? AppColors.expenseRed : AppColors.primaryBlack;
-    }
-
-    final amountPrefix = isTransfer ? '' : (isExpense ? '-' : '+');
-
-    // 2. Title Logic
-    final String title;
-    if (isTransfer) {
-      final targetName = transaction.transferAccount.value?.name ?? 'Unknown';
-      title = 'Transfer to $targetName';
-    } else {
-      title = category?.name ?? 'Unknown';
-    }
-
-    // 3. Icon Logic
-    final IconData iconData;
-    
-    if (isTransfer) {
-      iconData = Icons.swap_horiz;
-    } else {
-      iconData = category != null
-          ? IconUtils.getIconData(category.iconCode)
-          : Icons.help_outline;
-    }
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? Theme.of(context).cardTheme.color : AppColors.brandDark;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(32),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: const BoxDecoration(
-            color: Colors.white, // Changed to white to contrast with cardSurface
-            shape: BoxShape.circle,
+      child: Column(
+        children: [
+          Text(
+            'Total Balance',
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
           ),
-          child: Icon(
-            iconData,
-            color: AppColors.primaryBlack,
-            size: 24,
+          const SizedBox(height: 8),
+          Text(
+            '$currencySymbol${totalBalance.toStringAsFixed(2)}',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.primaryBlack,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSummaryItem(
+                context,
+                label: 'Income',
+                amount: totalIncome,
+                color: Colors.white,
+                icon: Icons.arrow_downward,
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white24,
+              ),
+              _buildSummaryItem(
+                context,
+                label: 'Expenses',
+                amount: totalExpense,
+                color: AppColors.brandRed,
+                icon: Icons.arrow_upward,
+              ),
+            ],
           ),
-        ),
-        subtitle: (transaction.note.isNotEmpty || (transaction.receiptPath?.isNotEmpty ?? false))
-            ? Row(
-                children: [
-                  if (transaction.note.isNotEmpty)
-                    Flexible(
-                      child: Text(
-                        transaction.note,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.secondaryGrey),
-                      ),
-                    ),
-                  if (transaction.note.isNotEmpty && (transaction.receiptPath?.isNotEmpty ?? false))
-                    const SizedBox(width: 8),
-                  if (transaction.receiptPath?.isNotEmpty ?? false)
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FullScreenImageViewer(
-                              imagePath: transaction.receiptPath!,
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Icon(Icons.attachment, size: 16, color: AppColors.secondaryGrey),
-                    ),
-                ],
-              )
-            : null,
-        trailing: Text(
-          '$amountPrefix${settings.currencySymbol} ${transaction.amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            color: amountColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(
+    BuildContext context, {
+    required String label,
+    required double amount,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: Colors.white70),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(
+            '$currencySymbol${amount.toStringAsFixed(2)}',
+            style: GoogleFonts.poppins(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -10612,48 +9533,177 @@ class SmsParserService {
 }
 </file>
 
-<file path="finance_tracker_offline/lib/main.dart">
-import 'package:finance_tracker_offline/core/database/db_service.dart';
-import 'package:finance_tracker_offline/core/router/app_router.dart';
-import 'package:finance_tracker_offline/core/services/settings_service.dart';
+<file path="finance_tracker_offline/lib/features/stats/widgets/date_filter_controls.dart">
+import 'package:finance_tracker_offline/features/stats/models/date_filter_type.dart';
+import 'package:finance_tracker_offline/features/stats/providers/date_filter_provider.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  final dbService = DbService();
-  await dbService.init();
-
-  final prefs = await SharedPreferences.getInstance();
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        dbServiceProvider.overrideWithValue(dbService),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
-      child: const MyApp(),
-    ),
-  );
-}
-
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+class DateFilterControls extends ConsumerWidget {
+  const DateFilterControls({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
+    final filterState = ref.watch(dateFilterProvider);
+    final notifier = ref.read(dateFilterProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
-    return MaterialApp.router(
-      title: 'Finance Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    String dateText = _getDateText(filterState);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          // Filter Type Dropdown
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) {
+                  return SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 100),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 16),
+                          Text(
+                            'Select Period',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          ...DateFilterType.values.map((type) {
+                            return ListTile(
+                              title: Text(type.label),
+                              trailing: filterState.type == type
+                                  ? Icon(Icons.check, color: isDark ? Colors.white : AppColors.brandDark)
+                                  : null,
+                              onTap: () {
+                                notifier.setFilterType(type);
+                                Navigator.pop(context);
+                              },
+                            );
+                          }),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardTheme.color,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    filterState.type.label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: textColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.keyboard_arrow_down, color: textColor),
+                ],
+              ),
+            ),
+          ),
+          
+          const Spacer(),
+
+          // Navigator
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: filterState.type == DateFilterType.custom
+                    ? null
+                    : () => notifier.previous(),
+              ),
+              InkWell(
+                onTap: filterState.type == DateFilterType.custom
+                    ? () => _pickDateRange(context, notifier, filterState)
+                    : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  child: Text(
+                    dateText,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: filterState.type == DateFilterType.custom
+                    ? null
+                    : () => notifier.next(),
+              ),
+            ],
+          ),
+        ],
       ),
-      routerConfig: router,
     );
+  }
+
+  String _getDateText(DateFilterState state) {
+    switch (state.type) {
+      case DateFilterType.monthly:
+        return DateFormat('MMMM yyyy').format(state.referenceDate);
+      case DateFilterType.yearly:
+        return DateFormat('yyyy').format(state.referenceDate);
+      case DateFilterType.weekly:
+        final start = state.startDate;
+        final end = state.endDate;
+        if (start.month == end.month) {
+          return '${DateFormat('MMM d').format(start)} - ${DateFormat('d').format(end)}';
+        } else {
+          return '${DateFormat('MMM d').format(start)} - ${DateFormat('MMM d').format(end)}';
+        }
+      case DateFilterType.custom:
+        final start = state.customStart;
+        final end = state.customEnd;
+        if (start == null || end == null) {
+          return 'Select Range';
+        }
+        return '${DateFormat('MMM d').format(start)} - ${DateFormat('MMM d').format(end)}';
+    }
+  }
+
+  Future<void> _pickDateRange(
+      BuildContext context, DateFilter notifier, DateFilterState state) async {
+    final initialDateRange = state.customStart != null && state.customEnd != null
+        ? DateTimeRange(start: state.customStart!, end: state.customEnd!)
+        : null;
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDateRange: initialDateRange,
+    );
+
+    if (picked != null) {
+      notifier.setCustomRange(picked.start, picked.end);
+    }
   }
 }
 </file>
@@ -12200,6 +11250,114 @@ extension TransactionQueryProperty
 }
 </file>
 
+<file path="finance_tracker_offline/lib/theme/app_theme.dart">
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
+
+class AppTheme {
+  static ThemeData get lightTheme => _buildTheme(Brightness.light);
+  static ThemeData get darkTheme => _buildTheme(Brightness.dark);
+
+  static ThemeData _buildTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    
+    // Logic to switch colors based on brightness using only available AppColors
+    final bgColor = isDark ? AppColors.brandDark : AppColors.scaffoldBackground;
+    final textColor = isDark ? AppColors.brandWhite : AppColors.primaryBlack;
+    final cardColor = isDark ? const Color(0xFF252525) : AppColors.cardSurface;
+    final iconColor = isDark ? AppColors.brandWhite : AppColors.brandDark;
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      scaffoldBackgroundColor: bgColor,
+      
+      // Typography: Poppins
+      textTheme: GoogleFonts.poppinsTextTheme().apply(
+        bodyColor: textColor,
+        displayColor: textColor,
+      ),
+
+      // AppBar
+      appBarTheme: AppBarTheme(
+        backgroundColor: bgColor,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: iconColor),
+        titleTextStyle: GoogleFonts.poppins(
+          color: textColor,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+
+      // Card Theme (32px Radius)
+      cardTheme: CardThemeData(
+        color: cardColor,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+      ),
+
+      // Elevated Button (Stadium Shape + Brand Red)
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.brandRed,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          shape: const StadiumBorder(), // Pill shape
+        ),
+      ),
+      
+      // Floating Action Button
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.brandDark, 
+        foregroundColor: Colors.white,
+        shape: CircleBorder(),
+      ),
+      
+      // Icon Theme
+      iconTheme: IconThemeData(color: iconColor),
+
+      // Date Picker Theme
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.scaffoldBackground,
+        headerBackgroundColor: AppColors.brandDark,
+        headerForegroundColor: AppColors.brandWhite,
+        dayForegroundColor: WidgetStateProperty.all(AppColors.primaryBlack),
+        yearForegroundColor: WidgetStateProperty.all(AppColors.primaryBlack),
+        cancelButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(AppColors.brandRed),
+        ),
+        confirmButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(AppColors.brandRed),
+        ),
+      ),
+
+      // Popup Menu Theme
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+
+      // Dropdown Menu Theme
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(AppColors.cardSurface),
+          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+</file>
+
 <file path="finance_tracker_offline/windows/flutter/generated_plugin_registrant.cc">
 //
 //  Generated file. Do not edit.
@@ -12260,537 +11418,593 @@ foreach(ffi_plugin ${FLUTTER_FFI_PLUGIN_LIST})
 endforeach(ffi_plugin)
 </file>
 
-<file path="finance_tracker_offline/lib/features/add_transaction/add_transaction_screen.dart">
+<file path="finance_tracker_offline/lib/features/accounts/add_account_screen.dart">
 import 'package:finance_tracker_offline/core/database/db_service.dart';
 import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
-import 'package:finance_tracker_offline/core/widgets/full_screen_image_viewer.dart';
-import 'package:finance_tracker_offline/features/add_transaction/providers/category_provider.dart';
-import 'package:finance_tracker_offline/features/add_transaction/providers/receipt_provider.dart';
 import 'package:finance_tracker_offline/models/account.dart';
-import 'package:finance_tracker_offline/models/category.dart';
-import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-enum TransactionType { income, expense, transfer }
-
-class AddTransactionScreen extends ConsumerStatefulWidget {
-  final Transaction? transactionToEdit;
-
-  const AddTransactionScreen({super.key, this.transactionToEdit});
+class AddAccountScreen extends ConsumerStatefulWidget {
+  const AddAccountScreen({super.key});
 
   @override
-  ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  ConsumerState<AddAccountScreen> createState() => _AddAccountScreenState();
 }
 
-class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
-  TransactionType _transactionType = TransactionType.expense;
-  late DateTime _selectedDate;
-  Category? _selectedCategory;
-  Account? _selectedAccount;
-  Account? _targetAccount;
-  String? _receiptPath;
-  final _amountController = TextEditingController();
-  final _noteController = TextEditingController();
+class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _lastFourDigitsController = TextEditingController();
+  final _initialBalanceController = TextEditingController();
+  
+  String _selectedType = 'Bank';
+  String _selectedColor = 'FF42A5F5'; // Default Blue
+
+  final List<String> _accountTypes = ['Cash', 'Bank', 'Card'];
+  
+  final List<Map<String, String>> _colors = [
+    {'name': 'Blue', 'hex': 'FF42A5F5'},
+    {'name': 'Red', 'hex': 'FFEF5350'},
+    {'name': 'Green', 'hex': 'FF66BB6A'},
+    {'name': 'Orange', 'hex': 'FFFFA726'},
+    {'name': 'Purple', 'hex': 'FFAB47BC'},
+    {'name': 'Teal', 'hex': 'FF26A69A'},
+    {'name': 'Brown', 'hex': 'FF8D6E63'},
+    {'name': 'Grey', 'hex': 'FF78909C'},
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    // Initialize state based on whether we are editing or creating
-    if (widget.transactionToEdit != null) {
-      final txn = widget.transactionToEdit!;
-      if (txn.isTransfer) {
-        _transactionType = TransactionType.transfer;
-        _targetAccount = txn.transferAccount.value;
-      } else {
-        _transactionType = txn.isExpense ? TransactionType.expense : TransactionType.income;
+  void dispose() {
+    _nameController.dispose();
+    _lastFourDigitsController.dispose();
+    _initialBalanceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveAccount() async {
+    if (_formKey.currentState!.validate()) {
+      final name = _nameController.text.trim();
+      final lastFourDigits = _lastFourDigitsController.text.trim();
+      final initialBalance = double.tryParse(_initialBalanceController.text) ?? 0.0;
+
+      final account = Account()
+        ..name = name
+        ..type = _selectedType
+        ..lastFourDigits = lastFourDigits.isNotEmpty ? lastFourDigits : null
+        ..initialBalance = initialBalance
+        ..currentBalance = initialBalance // Initially same as initial balance
+        ..colorHex = _selectedColor;
+
+      await ref.read(dbServiceProvider).addAccount(account);
+      
+      // Refresh the list
+      ref.invalidate(accountsProvider);
+
+      if (mounted) {
+        context.pop();
       }
-      _selectedDate = txn.date;
-      _amountController.text = txn.amount.toString();
-      _noteController.text = txn.note;
-      _selectedCategory = txn.category.value;
-      _selectedAccount = txn.account.value;
-      _receiptPath = txn.receiptPath;
-    } else {
-      _transactionType = TransactionType.expense;
-      _selectedDate = DateTime.now();
     }
   }
 
-  Future<void> _pickReceipt() async {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint, String? prefixText}) {
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white : AppColors.brandDark;
+
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixText: prefixText,
+      filled: true,
+      fillColor: Theme.of(context).cardTheme.color,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: borderColor, width: 1),
+      ),
+      labelStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+      hintStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+      prefixStyle: GoogleFonts.poppins(color: textColor),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+    final borderColor = isDark ? Colors.white : AppColors.brandDark;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text('Add Account', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'Account Name', hint: 'e.g., HDFC Salary'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (context) {
+                      return SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 16),
+                            Text(
+                              'Select Account Type',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ..._accountTypes.map((type) {
+                              return ListTile(
+                                title: Text(
+                                  type,
+                                  style: GoogleFonts.poppins(color: textColor),
+                                ),
+                                trailing: _selectedType == type
+                                    ? Icon(Icons.check, color: borderColor)
+                                    : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedType = type;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardTheme.color,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedType,
+                          style: GoogleFonts.poppins(color: textColor, fontSize: 16),
+                        ),
+                      ),
+                      Icon(Icons.keyboard_arrow_down, color: textColor),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _lastFourDigitsController,
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'SMS Matching Digits', hint: 'Last 4 digits of account/card').copyWith(counterText: ""),
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _initialBalanceController,
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'Initial Balance', prefixText: '₹ '),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter initial balance';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Please enter a valid number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Color',
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _colors.map((color) {
+                  final isSelected = _selectedColor == color['hex'];
+                  final colorValue = int.parse(color['hex']!, radix: 16);
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedColor = color['hex']!;
+                      });
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Color(colorValue),
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? Border.all(color: borderColor, width: 3)
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white)
+                          : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _saveAccount,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandRed,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: const StadiumBorder(),
+                ),
+                child: Text(
+                  'Save Account',
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/settings/settings_screen.dart">
+import 'package:finance_tracker_offline/features/settings/providers/backup_provider.dart';
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text('Settings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.dark_mode,
+            title: 'Dark Mode',
+            subtitle: 'Toggle application theme',
+            onTap: () {
+              ref.read(settingsProvider.notifier).toggleTheme(settings.themeMode != ThemeMode.dark);
+            },
+            trailing: Switch(
+              value: settings.themeMode == ThemeMode.dark,
+              onChanged: (value) {
+                ref.read(settingsProvider.notifier).toggleTheme(value);
+              },
+              activeColor: Theme.of(context).iconTheme.color,
+            ),
+          ),
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.currency_exchange,
+            title: 'Currency',
+            subtitle: '${settings.currencyCode} (${settings.currencySymbol})',
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => SimpleDialog(
+                  title: Text('Select Currency', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  children: [
+                    _buildCurrencyOption(context, ref, 'INR', '₹'),
+                    _buildCurrencyOption(context, ref, 'USD', '\$'),
+                    _buildCurrencyOption(context, ref, 'EUR', '€'),
+                    _buildCurrencyOption(context, ref, 'GBP', '£'),
+                  ],
+                ),
+              );
+            },
+          ),
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.save_alt,
+            title: 'Backup Data',
+            subtitle: 'Export data to JSON',
+            onTap: () async {
+              try {
+                await ref.read(backupServiceProvider).createBackup();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Backup file generated')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Backup failed: $e')),
+                  );
+                }
+              }
+            },
+          ),
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.restore,
+            title: 'Restore Data',
+            subtitle: 'Import JSON and replace DB',
+            onTap: () => _confirmRestore(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Widget? trailing,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final subtitleColor = textColor?.withOpacity(0.6);
+    final iconBgColor = isDark ? const Color(0xFF2C2C2C) : AppColors.brandDark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
           children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () async {
-                Navigator.pop(context);
-                final path = await ref.read(receiptServiceProvider).pickReceipt(ImageSource.camera);
-                if (path != null) {
-                  setState(() => _receiptPath = path);
-                }
-              },
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () async {
-                Navigator.pop(context);
-                final path = await ref.read(receiptServiceProvider).pickReceipt(ImageSource.gallery);
-                if (path != null) {
-                  setState(() => _receiptPath = path);
-                }
-              },
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: textColor,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
+            trailing ?? Icon(Icons.chevron_right, color: subtitleColor),
           ],
         ),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  void _saveTransaction() async {
-    // Basic validation since we removed the Form wrapping some fields
-    if (_amountController.text.isEmpty || double.tryParse(_amountController.text) == null) {
-       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid amount')),
-        );
-        return;
-    }
-
-    if (_selectedAccount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an account')),
-      );
-      return;
-    }
-
-    if (_transactionType == TransactionType.transfer) {
-      if (_targetAccount == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a target account')),
-        );
-        return;
-      }
-      if (_selectedAccount!.id == _targetAccount!.id) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Source and Target accounts cannot be the same')),
-        );
-        return;
-      }
-    } else {
-      if (_selectedCategory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a category')),
-        );
-        return;
-      }
-    }
-
-    final amount = double.parse(_amountController.text);
-    final dbService = ref.read(dbServiceProvider);
-
-    if (widget.transactionToEdit != null) {
-      // UPDATE Existing
-      final txn = widget.transactionToEdit!;
-      
-      // Capture old values for balance reversal
-      final oldAmount = txn.amount;
-      final oldIsExpense = txn.isExpense;
-      final oldAccount = txn.account.value;
-
-      // Update fields
-      txn.amount = amount;
-      txn.isExpense = _transactionType == TransactionType.expense || _transactionType == TransactionType.transfer;
-      txn.isTransfer = _transactionType == TransactionType.transfer;
-      txn.date = _selectedDate;
-      txn.note = _noteController.text;
-      txn.receiptPath = _receiptPath;
-      txn.category.value = _selectedCategory;
-      txn.account.value = _selectedAccount;
-      if (_transactionType == TransactionType.transfer) {
-        txn.transferAccount.value = _targetAccount;
-      }
-
-      await dbService.updateTransaction(
-        txn,
-        oldAmount: oldAmount,
-        oldIsExpense: oldIsExpense,
-        oldAccount: oldAccount,
-      );
-    } else {
-      // CREATE New
-      if (_transactionType == TransactionType.transfer) {
-        await dbService.addTransfer(
-          _selectedAccount!,
-          _targetAccount!,
-          amount,
-          _selectedDate,
-          _noteController.text,
-          receiptPath: _receiptPath,
-        );
-      } else {
-        final txn = Transaction()
-          ..amount = amount
-          ..isExpense = _transactionType == TransactionType.expense
-          ..date = _selectedDate
-          ..note = _noteController.text
-          ..receiptPath = _receiptPath;
-        
-        txn.category.value = _selectedCategory;
-        txn.account.value = _selectedAccount;
-        
-        await dbService.addTransaction(txn);
-      }
-    }
-
-    if (mounted) {
-      context.pop();
-    }
-  }
-
-  void _showTypePicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: TransactionType.values.map((type) {
-              return ListTile(
-                leading: Icon(
-                  type == TransactionType.expense ? Icons.arrow_downward :
-                  type == TransactionType.income ? Icons.arrow_upward : Icons.swap_horiz
-                ),
-                title: Text(type.name.toUpperCase()),
-                onTap: () {
-                  setState(() {
-                    _transactionType = type;
-                    _selectedCategory = null;
-                    if (_transactionType != TransactionType.transfer) {
-                      _targetAccount = null;
-                    }
-                  });
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAccountPicker(List<Account> accounts) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: accounts.length,
-          itemBuilder: (context, index) {
-            final account = accounts[index];
-            return ListTile(
-              title: Text(account.name),
-              onTap: () {
-                setState(() {
-                  _selectedAccount = account;
-                  if (_targetAccount?.id == account.id) {
-                    _targetAccount = null;
-                  }
-                });
-                Navigator.pop(context);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showTargetAccountPicker(List<Account> accounts) {
-     final targetAccounts = accounts.where((a) => a.id != _selectedAccount?.id).toList();
-     showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: targetAccounts.length,
-          itemBuilder: (context, index) {
-            final account = targetAccounts[index];
-            return ListTile(
-              title: Text(account.name),
-              onTap: () {
-                setState(() {
-                  _targetAccount = account;
-                });
-                Navigator.pop(context);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showCategoryPicker(List<Category> categories) {
-     final isExpense = _transactionType == TransactionType.expense;
-     final filteredCategories = categories.where((c) => c.isExpense == isExpense).toList();
-     
-     showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: filteredCategories.length,
-          itemBuilder: (context, index) {
-            final category = filteredCategories[index];
-            return ListTile(
-              leading: Icon(IconData(
-                  category.iconCode == 'fastfood' ? 0xe25a : 
-                  category.iconCode == 'directions_bus' ? 0xe1d5 :
-                  category.iconCode == 'shopping_bag' ? 0xf1cc :
-                  category.iconCode == 'payments' ? 0xe481 :
-                  category.iconCode == 'work' ? 0xe6f4 :
-                  category.iconCode == 'help_outline' ? 0xe887 : 0xe887, // Fallback
-                  fontFamily: 'MaterialIcons'
-                )),
-              title: Text(category.name),
-              onTap: () {
-                setState(() {
-                  _selectedCategory = category;
-                });
-                Navigator.pop(context);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showNoteEditor() {
-    showDialog(
+  Future<void> _confirmRestore(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Note'),
-        content: TextFormField(
-          controller: _noteController,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Enter note'),
-        ),
+        title: Text('Warning: Data Loss', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+            'This will wipe all current data and replace it with the backup. Are you sure?',
+            style: GoogleFonts.poppins()),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {}); // Refresh UI to show new note
-            },
-            child: const Text('Done'),
-          )
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.poppins()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Restore', style: GoogleFonts.poppins(color: AppColors.brandRed)),
+          ),
         ],
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Restoring...')),
+        );
+
+        final success = await ref.read(backupServiceProvider).restoreBackup();
+
+        if (context.mounted) {
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Data restored successfully')),
+            );
+          } else {
+            // User cancelled file picker
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Restore failed: $e')),
+          );
+        }
+      }
+    }
   }
 
+  Widget _buildCurrencyOption(
+    BuildContext context,
+    WidgetRef ref,
+    String code,
+    String symbol,
+  ) {
+    return SimpleDialogOption(
+      onPressed: () {
+        ref.read(settingsProvider.notifier).updateCurrency(code, symbol);
+        Navigator.pop(context);
+      },
+      child: Text('$code ($symbol)', style: GoogleFonts.poppins()),
+    );
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/stats/stats_screen.dart">
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/features/stats/models/category_stat.dart';
+import 'package:finance_tracker_offline/features/stats/widgets/date_filter_controls.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'providers/monthly_stats_provider.dart';
+import 'widgets/stats_category_view.dart';
+
+class StatsScreen extends ConsumerWidget {
+  const StatsScreen({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
-    final accountsAsync = ref.watch(accountsProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final expenseAsync = ref.watch(statsProvider(TransactionType.expense));
+    final incomeAsync = ref.watch(statsProvider(TransactionType.income));
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text('Add Transaction', style: TextStyle(color: Colors.black)),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: SafeArea(
-        child: Column(
+    double calculateTotal(AsyncValue<List<CategoryStat>> asyncValue) {
+      return asyncValue.maybeWhen(
+        data: (stats) => stats.fold(0.0, (sum, item) => sum + item.totalAmount),
+        orElse: () => 0.0,
+      );
+    }
+
+    final expenseTotal = calculateTotal(expenseAsync);
+    final incomeTotal = calculateTotal(incomeAsync);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text('Statistics', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+        ),
+        body: Column(
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    // Amount Display
-                    Center(
-                      child: IntrinsicWidth(
-                        child: TextField(
-                          controller: _amountController,
-                          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.black),
-                          textAlign: TextAlign.center,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: '0',
-                            prefixText: '₹ ',
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    // Pills Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Pill 1: Transaction Type
-                        GestureDetector(
-                          onTap: _showTypePicker,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(_transactionType.name.toUpperCase()),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Pill 2: Account
-                        GestureDetector(
-                          onTap: () {
-                            accountsAsync.whenData((accounts) => _showAccountPicker(accounts));
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(_selectedAccount?.name ?? 'Select Account'),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Form Group
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Column(
-                        children: [
-                          // Item 1: Category OR Target Account
-                          if (_transactionType == TransactionType.transfer)
-                             ListTile(
-                                leading: const Icon(Icons.account_balance_wallet),
-                                title: Text(_targetAccount?.name ?? 'Select Target Account'),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () {
-                                   accountsAsync.whenData((accounts) => _showTargetAccountPicker(accounts));
-                                },
-                             )
-                          else
-                             ListTile(
-                                leading: const Icon(Icons.category),
-                                title: Text(_selectedCategory?.name ?? 'Select Category'),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () {
-                                   categoriesAsync.whenData((categories) => _showCategoryPicker(categories));
-                                },
-                             ),
-                          
-                          const Divider(height: 1),
-                          
-                          // Item 2: Date
-                          ListTile(
-                            leading: const Icon(Icons.calendar_today),
-                            title: Text(DateFormat('dd MMM yyyy').format(_selectedDate)),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: _selectedDate,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now().add(const Duration(days: 365)),
-                              );
-                              if (picked != null) {
-                                setState(() {
-                                  _selectedDate = picked;
-                                });
-                              }
-                            },
-                          ),
-                          
-                          const Divider(height: 1),
-                          
-                          // Item 3: Note
-                          ListTile(
-                            leading: const Icon(Icons.edit),
-                            title: Text(_noteController.text.isEmpty ? 'Add Note' : _noteController.text),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: _showNoteEditor,
-                          ),
-
-                           const Divider(height: 1),
-
-                           // Item 4: Receipt
-                           ListTile(
-                            leading: const Icon(Icons.camera_alt),
-                            title: Text(_receiptPath == null ? 'Attach Receipt' : 'Receipt Attached'),
-                            trailing: _receiptPath == null ? const Icon(Icons.chevron_right) : IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _receiptPath = null)),
-                            onTap: _receiptPath == null ? _pickReceipt : () {
-                               Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => FullScreenImageViewer(imagePath: _receiptPath!),
-                                ),
-                              );
-                            },
-                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+            const DateFilterControls(),
+            const SizedBox(height: 16),
+            // TabBar
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: TabBar(
+                indicator: ShapeDecoration(
+                  color: isDark ? AppColors.brandBeige : AppColors.brandDark,
+                  shape: const StadiumBorder(),
                 ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: isDark ? AppColors.brandDark : Colors.white,
+                unselectedLabelColor: AppColors.secondaryGrey,
+                labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                dividerColor: Colors.transparent,
+                tabs: [
+                  Tab(text: 'Expense (${settings.currencySymbol} ${expenseTotal.toStringAsFixed(0)})'),
+                  Tab(text: 'Income (${settings.currencySymbol} ${incomeTotal.toStringAsFixed(0)})'),
+                ],
               ),
             ),
-            
-            // Footer
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: _saveTransaction,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1C1C1E),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Save Expense', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            // TabBarView
+            const Expanded(
+              child: TabBarView(
+                children: [
+                  StatsCategoryView(type: TransactionType.expense),
+                  StatsCategoryView(type: TransactionType.income),
+                ],
               ),
             ),
           ],
@@ -12801,193 +12015,49 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 }
 </file>
 
-<file path="finance_tracker_offline/lib/features/dashboard/dashboard_screen.dart">
-import 'package:finance_tracker_offline/features/dashboard/providers/transaction_provider.dart';
-import 'package:finance_tracker_offline/features/dashboard/widgets/balance_card.dart';
-import 'package:finance_tracker_offline/features/dashboard/widgets/transaction_card.dart';
+<file path="finance_tracker_offline/lib/main.dart">
+import 'package:finance_tracker_offline/core/database/db_service.dart';
+import 'package:finance_tracker_offline/core/router/app_router.dart';
+import 'package:finance_tracker_offline/core/services/settings_service.dart';
 import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
-import 'package:finance_tracker_offline/features/settings/settings_screen.dart';
-import 'package:finance_tracker_offline/features/sms_parser/providers/sms_provider.dart';
-import 'package:finance_tracker_offline/models/transaction.dart';
-import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:finance_tracker_offline/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  final dbService = DbService();
+  await dbService.init();
 
-  String _getDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateToCheck = DateTime(date.year, date.month, date.day);
+  final prefs = await SharedPreferences.getInstance();
 
-    if (dateToCheck == today) {
-      return 'Today';
-    } else if (dateToCheck == yesterday) {
-      return 'Yesterday';
-    } else {
-      return DateFormat.yMMMd().format(date);
-    }
-  }
+  runApp(
+    ProviderScope(
+      overrides: [
+        dbServiceProvider.overrideWithValue(dbService),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
     final settings = ref.watch(settingsProvider);
-    final transactionListAsync = ref.watch(transactionListProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                children: [
-                  const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "VaultFlow",
-                    style: TextStyle(
-                      color: AppColors.primaryBlack,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.sync, color: AppColors.primaryBlack),
-                    onPressed: () async {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Syncing SMS...')),
-                      );
-                      try {
-                        final count = await ref.refresh(smsSyncProvider.future);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Synced $count new transactions')),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Sync failed: $e')),
-                          );
-                        }
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: transactionListAsync.when(
-                data: (transactions) {
-                  // Calculate totals
-                  double totalBalance = 0;
-                  double totalIncome = 0;
-                  double totalExpense = 0;
-
-                  for (var txn in transactions) {
-                    if (txn.isExpense) {
-                      totalExpense += txn.amount;
-                      totalBalance -= txn.amount;
-                    } else {
-                      totalIncome += txn.amount;
-                      totalBalance += txn.amount;
-                    }
-                  }
-
-                  if (transactions.isEmpty) {
-                    return CustomScrollView(
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: BalanceCard(
-                            totalBalance: totalBalance,
-                            totalIncome: totalIncome,
-                            totalExpense: totalExpense,
-                            currencySymbol: settings.currencySymbol,
-                          ),
-                        ),
-                        const SliverFillRemaining(
-                          child: Center(child: Text('No transactions yet')),
-                        ),
-                      ],
-                    );
-                  }
-
-                  // Group transactions by date
-                  final groupedTransactions = <String, List<Transaction>>{};
-                  for (var txn in transactions) {
-                    final dateKey = _getDateHeader(txn.date);
-                    if (!groupedTransactions.containsKey(dateKey)) {
-                      groupedTransactions[dateKey] = [];
-                    }
-                    groupedTransactions[dateKey]!.add(txn);
-                  }
-
-                  return CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: BalanceCard(
-                          totalBalance: totalBalance,
-                          totalIncome: totalIncome,
-                          totalExpense: totalExpense,
-                          currencySymbol: settings.currencySymbol,
-                        ),
-                      ),
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final dateKey = groupedTransactions.keys.elementAt(index);
-                            final txns = groupedTransactions[dateKey]!;
-                            
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                    vertical: 8.0,
-                                  ),
-                                  child: Text(
-                                    dateKey,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: AppColors.secondaryGrey,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                ),
-                                ...txns.map((txn) => InkWell(
-                                  onTap: () => context.push('/add_transaction', extra: txn),
-                                  child: TransactionCard(transaction: txn),
-                                )),
-                                const SizedBox(height: 16),
-                              ],
-                            );
-                          },
-                          childCount: groupedTransactions.length,
-                        ),
-                      ),
-                      const SliverPadding(padding: EdgeInsets.only(bottom: 80)), // Space for FAB
-                    ],
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Error: $err')),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add_transaction'),
-        backgroundColor: AppColors.brandPrimary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+    return MaterialApp.router(
+      title: 'Finance Tracker',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: settings.themeMode,
+      routerConfig: router,
     );
   }
 }
@@ -14500,6 +13570,1210 @@ class DbService {
 }
 
 final dbServiceProvider = Provider<DbService>((ref) => DbService());
+</file>
+
+<file path="finance_tracker_offline/lib/core/router/scaffold_with_nav_bar.dart">
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+class ScaffoldWithNavBar extends StatelessWidget {
+  const ScaffoldWithNavBar({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentIndex = _calculateSelectedIndex(context);
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          child,
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.brandDark,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(context, 0, Icons.receipt_long, currentIndex),
+                  _buildNavItem(context, 1, Icons.pie_chart, currentIndex),
+                  const SizedBox(width: 48), // Space for FAB
+                  _buildNavItem(context, 2, Icons.account_balance, currentIndex),
+                  _buildNavItem(context, 3, Icons.settings, currentIndex),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 45, // Adjusted to sit nicely above/docked
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: FloatingActionButton(
+                  onPressed: () => context.push('/add_transaction'),
+                  backgroundColor: AppColors.brandRed,
+                  shape: const CircleBorder(),
+                  elevation: 4,
+                  child: const Icon(Icons.add, color: Colors.white, size: 32),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(BuildContext context, int index, IconData icon, int currentIndex) {
+    final isSelected = index == currentIndex;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onItemTapped(index, context),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 60,
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: isSelected
+                ? BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  )
+                : null,
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static int _calculateSelectedIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).uri.path;
+    if (location.startsWith('/stats')) {
+      return 1;
+    }
+    if (location.startsWith('/accounts')) {
+      return 2;
+    }
+    if (location.startsWith('/settings')) {
+      return 3;
+    }
+    return 0;
+  }
+
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        context.go('/stats');
+        break;
+      case 2:
+        context.go('/accounts');
+        break;
+      case 3:
+        context.go('/settings');
+        break;
+    }
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/dashboard/widgets/transaction_card.dart">
+import 'package:finance_tracker_offline/core/utils/icon_utils.dart';
+import 'package:finance_tracker_offline/core/widgets/full_screen_image_viewer.dart';
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class TransactionCard extends ConsumerWidget {
+  const TransactionCard({
+    required this.transaction,
+    super.key,
+  });
+
+  final Transaction transaction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final category = transaction.category.value;
+    final isTransfer = transaction.isTransfer;
+    final isExpense = transaction.isExpense;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
+    // 1. Color Logic
+    final Color amountColor;
+    if (isTransfer) {
+      amountColor = textColor;
+    } else {
+      amountColor = isExpense ? AppColors.brandRed : textColor;
+    }
+
+    final amountPrefix = isTransfer ? '' : (isExpense ? '-' : '+');
+
+    // 2. Title Logic
+    final String title;
+    if (isTransfer) {
+      final targetName = transaction.transferAccount.value?.name ?? 'Unknown';
+      title = 'Transfer to $targetName';
+    } else {
+      title = category?.name ?? 'Unknown';
+    }
+
+    // 3. Icon Logic
+    final IconData iconData;
+    
+    if (isTransfer) {
+      iconData = Icons.swap_horiz;
+    } else {
+      iconData = category != null
+          ? IconUtils.getIconData(category.iconCode)
+          : Icons.help_outline;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2C) : AppColors.brandDark,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              iconData,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                if (transaction.note.isNotEmpty || (transaction.receiptPath?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (transaction.note.isNotEmpty)
+                        Flexible(
+                          child: Text(
+                            transaction.note,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              color: AppColors.secondaryGrey,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      if (transaction.note.isNotEmpty && (transaction.receiptPath?.isNotEmpty ?? false))
+                        const SizedBox(width: 8),
+                      if (transaction.receiptPath?.isNotEmpty ?? false)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FullScreenImageViewer(
+                                  imagePath: transaction.receiptPath!,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Icon(Icons.attachment, size: 16, color: AppColors.secondaryGrey),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            '$amountPrefix${settings.currencySymbol} ${transaction.amount.toStringAsFixed(2)}',
+            style: GoogleFonts.poppins(
+              color: amountColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/accounts/accounts_screen.dart">
+import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
+import 'package:finance_tracker_offline/features/accounts/account_detail_screen.dart';
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/models/account.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class AccountsScreen extends ConsumerWidget {
+  const AccountsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accountsAsync = ref.watch(accountsProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text('Accounts', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_circle_outline, color: textColor),
+            onPressed: () => context.push('/add_account'),
+          ),
+        ],
+      ),
+      body: accountsAsync.when(
+        data: (accounts) {
+          if (accounts.isEmpty) {
+            return Center(
+              child: Text(
+                'No accounts added yet.',
+                style: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+              ),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: accounts.length,
+            itemBuilder: (context, index) {
+              final account = accounts[index];
+              return AccountCard(account: account);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
+      ),
+    );
+  }
+}
+
+class AccountCard extends ConsumerWidget {
+  final Account account;
+
+  const AccountCard({super.key, required this.account});
+
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'Bank':
+        return Icons.account_balance;
+      case 'Card':
+        return Icons.credit_card;
+      case 'Cash':
+        return Icons.money;
+      default:
+        return Icons.account_balance_wallet;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final accountColor = Color(int.parse(account.colorHex, radix: 16));
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AccountDetailScreen(account: account),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: accountColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _getIconForType(account.type),
+                color: accountColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    account.name,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: textColor,
+                    ),
+                  ),
+                  if (account.lastFourDigits != null)
+                    Text(
+                      'Ends in: ${account.lastFourDigits}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.secondaryGrey,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              '${settings.currencySymbol} ${account.currentBalance.toStringAsFixed(2)}',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: account.currentBalance >= 0 ? AppColors.incomeGreen : AppColors.expenseRed,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/add_transaction/add_transaction_screen.dart">
+import 'package:finance_tracker_offline/core/database/db_service.dart';
+import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
+import 'package:finance_tracker_offline/core/widgets/full_screen_image_viewer.dart';
+import 'package:finance_tracker_offline/features/add_transaction/providers/category_provider.dart';
+import 'package:finance_tracker_offline/features/add_transaction/providers/receipt_provider.dart';
+import 'package:finance_tracker_offline/models/account.dart';
+import 'package:finance_tracker_offline/models/category.dart';
+import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+
+enum TransactionType { income, expense, transfer }
+
+class AddTransactionScreen extends ConsumerStatefulWidget {
+  final Transaction? transactionToEdit;
+
+  const AddTransactionScreen({super.key, this.transactionToEdit});
+
+  @override
+  ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
+}
+
+class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
+  TransactionType _transactionType = TransactionType.expense;
+  late DateTime _selectedDate;
+  Category? _selectedCategory;
+  Account? _selectedAccount;
+  Account? _targetAccount;
+  String? _receiptPath;
+  final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize state based on whether we are editing or creating
+    if (widget.transactionToEdit != null) {
+      final txn = widget.transactionToEdit!;
+      if (txn.isTransfer) {
+        _transactionType = TransactionType.transfer;
+        _targetAccount = txn.transferAccount.value;
+      } else {
+        _transactionType = txn.isExpense ? TransactionType.expense : TransactionType.income;
+      }
+      _selectedDate = txn.date;
+      _amountController.text = txn.amount.toString();
+      _noteController.text = txn.note;
+      _selectedCategory = txn.category.value;
+      _selectedAccount = txn.account.value;
+      _receiptPath = txn.receiptPath;
+    } else {
+      _transactionType = TransactionType.expense;
+      _selectedDate = DateTime.now();
+    }
+  }
+
+  Future<void> _pickReceipt() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () async {
+                Navigator.pop(context);
+                final path = await ref.read(receiptServiceProvider).pickReceipt(ImageSource.camera);
+                if (path != null) {
+                  setState(() => _receiptPath = path);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () async {
+                Navigator.pop(context);
+                final path = await ref.read(receiptServiceProvider).pickReceipt(ImageSource.gallery);
+                if (path != null) {
+                  setState(() => _receiptPath = path);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  void _saveTransaction() async {
+    // Basic validation since we removed the Form wrapping some fields
+    if (_amountController.text.isEmpty || double.tryParse(_amountController.text) == null) {
+       ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid amount')),
+        );
+        return;
+    }
+
+    if (_selectedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an account')),
+      );
+      return;
+    }
+
+    if (_transactionType == TransactionType.transfer) {
+      if (_targetAccount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a target account')),
+        );
+        return;
+      }
+      if (_selectedAccount!.id == _targetAccount!.id) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Source and Target accounts cannot be the same')),
+        );
+        return;
+      }
+    } else {
+      if (_selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a category')),
+        );
+        return;
+      }
+    }
+
+    final amount = double.parse(_amountController.text);
+    final dbService = ref.read(dbServiceProvider);
+
+    if (widget.transactionToEdit != null) {
+      // UPDATE Existing
+      final txn = widget.transactionToEdit!;
+      
+      // Capture old values for balance reversal
+      final oldAmount = txn.amount;
+      final oldIsExpense = txn.isExpense;
+      final oldAccount = txn.account.value;
+
+      // Update fields
+      txn.amount = amount;
+      txn.isExpense = _transactionType == TransactionType.expense || _transactionType == TransactionType.transfer;
+      txn.isTransfer = _transactionType == TransactionType.transfer;
+      txn.date = _selectedDate;
+      txn.note = _noteController.text;
+      txn.receiptPath = _receiptPath;
+      txn.category.value = _selectedCategory;
+      txn.account.value = _selectedAccount;
+      if (_transactionType == TransactionType.transfer) {
+        txn.transferAccount.value = _targetAccount;
+      }
+
+      await dbService.updateTransaction(
+        txn,
+        oldAmount: oldAmount,
+        oldIsExpense: oldIsExpense,
+        oldAccount: oldAccount,
+      );
+    } else {
+      // CREATE New
+      if (_transactionType == TransactionType.transfer) {
+        await dbService.addTransfer(
+          _selectedAccount!,
+          _targetAccount!,
+          amount,
+          _selectedDate,
+          _noteController.text,
+          receiptPath: _receiptPath,
+        );
+      } else {
+        final txn = Transaction()
+          ..amount = amount
+          ..isExpense = _transactionType == TransactionType.expense
+          ..date = _selectedDate
+          ..note = _noteController.text
+          ..receiptPath = _receiptPath;
+        
+        txn.category.value = _selectedCategory;
+        txn.account.value = _selectedAccount;
+        
+        await dbService.addTransaction(txn);
+      }
+    }
+
+    if (mounted) {
+      context.pop();
+    }
+  }
+
+  void _showAccountPicker(List<Account> accounts) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ListView.builder(
+          shrinkWrap: true,
+          itemCount: accounts.length,
+          itemBuilder: (context, index) {
+            final account = accounts[index];
+            return ListTile(
+              title: Text(account.name),
+              onTap: () {
+                setState(() {
+                  _selectedAccount = account;
+                  if (_targetAccount?.id == account.id) {
+                    _targetAccount = null;
+                  }
+                });
+                Navigator.pop(context);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTargetAccountPicker(List<Account> accounts) {
+     final targetAccounts = accounts.where((a) => a.id != _selectedAccount?.id).toList();
+     showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ListView.builder(
+          shrinkWrap: true,
+          itemCount: targetAccounts.length,
+          itemBuilder: (context, index) {
+            final account = targetAccounts[index];
+            return ListTile(
+              title: Text(account.name),
+              onTap: () {
+                setState(() {
+                  _targetAccount = account;
+                });
+                Navigator.pop(context);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCategoryPicker(List<Category> categories) {
+     final isExpense = _transactionType == TransactionType.expense;
+     final filteredCategories = categories.where((c) => c.isExpense == isExpense).toList();
+     
+     showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ListView.builder(
+          shrinkWrap: true,
+          itemCount: filteredCategories.length,
+          itemBuilder: (context, index) {
+            final category = filteredCategories[index];
+            return ListTile(
+              leading: Icon(IconData(
+                  category.iconCode == 'fastfood' ? 0xe25a : 
+                  category.iconCode == 'directions_bus' ? 0xe1d5 :
+                  category.iconCode == 'shopping_bag' ? 0xf1cc :
+                  category.iconCode == 'payments' ? 0xe481 :
+                  category.iconCode == 'work' ? 0xe6f4 :
+                  category.iconCode == 'help_outline' ? 0xe887 : 0xe887, // Fallback
+                  fontFamily: 'MaterialIcons'
+                )),
+              title: Text(category.name),
+              onTap: () {
+                setState(() {
+                  _selectedCategory = category;
+                });
+                Navigator.pop(context);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showNoteEditor() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Note'),
+        content: TextFormField(
+          controller: _noteController,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Enter note'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {}); // Refresh UI to show new note
+            },
+            child: const Text('Done'),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionTypeSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final segmentWidth = constraints.maxWidth / 3;
+          final selectedIndex = _transactionType == TransactionType.expense
+              ? 0
+              : _transactionType == TransactionType.income
+                  ? 1
+                  : 2;
+
+          return Stack(
+            children: [
+              // Layer 2 (Active Indicator)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                left: segmentWidth * selectedIndex,
+                top: 0,
+                bottom: 0,
+                width: segmentWidth,
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.brandBeige : AppColors.brandDark,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+              // Layer 3 (Text/Icons)
+              Row(
+                children: [
+                  _buildSelectorItem(TransactionType.expense, 'Expense', isDark, textColor),
+                  _buildSelectorItem(TransactionType.income, 'Income', isDark, textColor),
+                  _buildSelectorItem(TransactionType.transfer, 'Transfer', isDark, textColor),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSelectorItem(TransactionType type, String label, bool isDark, Color textColor) {
+    final isSelected = _transactionType == type;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          setState(() {
+            _transactionType = type;
+            _selectedCategory = null;
+            if (_transactionType != TransactionType.transfer) {
+              _targetAccount = null;
+            }
+          });
+        },
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: isSelected ? (isDark ? AppColors.brandDark : Colors.white) : textColor,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final accountsAsync = ref.watch(accountsProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text('Add Transaction', style: GoogleFonts.poppins(color: textColor, fontWeight: FontWeight.w600)),
+        iconTheme: IconThemeData(color: textColor),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    // Amount Display
+                    Center(
+                      child: IntrinsicWidth(
+                        child: TextField(
+                          controller: _amountController,
+                          style: GoogleFonts.poppins(fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
+                          textAlign: TextAlign.center,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '0',
+                            prefixText: '₹ ',
+                            hintStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+                            prefixStyle: GoogleFonts.poppins(color: textColor, fontSize: 48, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Segmented Control for Transaction Type
+                    _buildTransactionTypeSelector(),
+                    
+                    const SizedBox(height: 16),
+
+                    // Account Selector
+                    GestureDetector(
+                      onTap: () {
+                        accountsAsync.whenData((accounts) => _showAccountPicker(accounts));
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardTheme.color,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet, color: textColor),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedAccount?.name ?? 'Select Account',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              ),
+                            ),
+                            Icon(Icons.arrow_drop_down, color: textColor),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Form Group
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          // Item 1: Category OR Target Account
+                          if (_transactionType == TransactionType.transfer)
+                             ListTile(
+                                leading: Icon(Icons.account_balance_wallet, color: textColor),
+                                title: Text(_targetAccount?.name ?? 'Select Target Account', style: GoogleFonts.poppins(color: textColor)),
+                                trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
+                                onTap: () {
+                                   accountsAsync.whenData((accounts) => _showTargetAccountPicker(accounts));
+                                },
+                             )
+                          else
+                             ListTile(
+                                leading: Icon(Icons.category, color: textColor),
+                                title: Text(_selectedCategory?.name ?? 'Select Category', style: GoogleFonts.poppins(color: textColor)),
+                                trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
+                                onTap: () {
+                                   categoriesAsync.whenData((categories) => _showCategoryPicker(categories));
+                                },
+                             ),
+                          
+                          const Divider(height: 1, color: AppColors.divider),
+                          
+                          // Item 2: Date
+                          ListTile(
+                            leading: Icon(Icons.calendar_today, color: textColor),
+                            title: Text(DateFormat('dd MMM yyyy').format(_selectedDate), style: GoogleFonts.poppins(color: textColor)),
+                            trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _selectedDate = picked;
+                                });
+                              }
+                            },
+                          ),
+                          
+                          const Divider(height: 1, color: AppColors.divider),
+                          
+                          // Item 3: Note
+                          ListTile(
+                            leading: Icon(Icons.edit, color: textColor),
+                            title: Text(_noteController.text.isEmpty ? 'Add Note' : _noteController.text, style: GoogleFonts.poppins(color: textColor)),
+                            trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
+                            onTap: _showNoteEditor,
+                          ),
+
+                           const Divider(height: 1, color: AppColors.divider),
+
+                           // Item 4: Receipt
+                           ListTile(
+                            leading: Icon(Icons.camera_alt, color: textColor),
+                            title: Text(_receiptPath == null ? 'Attach Receipt' : 'Receipt Attached', style: GoogleFonts.poppins(color: textColor)),
+                            trailing: _receiptPath == null ? const Icon(Icons.chevron_right, color: AppColors.secondaryGrey) : IconButton(icon: Icon(Icons.close, color: textColor), onPressed: () => setState(() => _receiptPath = null)),
+                            onTap: _receiptPath == null ? _pickReceipt : () {
+                               Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FullScreenImageViewer(imagePath: _receiptPath!),
+                                ),
+                              );
+                            },
+                           ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Footer
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: _saveTransaction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandRed,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: const StadiumBorder(),
+                ),
+                child: Text('Save Expense', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="finance_tracker_offline/lib/features/dashboard/dashboard_screen.dart">
+import 'package:finance_tracker_offline/features/dashboard/providers/transaction_provider.dart';
+import 'package:finance_tracker_offline/features/dashboard/widgets/balance_card.dart';
+import 'package:finance_tracker_offline/features/dashboard/widgets/transaction_card.dart';
+import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/features/settings/settings_screen.dart';
+import 'package:finance_tracker_offline/features/sms_parser/providers/sms_provider.dart';
+import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+
+class DashboardScreen extends ConsumerWidget {
+  const DashboardScreen({super.key});
+
+  String _getDateHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateToCheck = DateTime(date.year, date.month, date.day);
+
+    if (dateToCheck == today) {
+      return 'Today';
+    } else if (dateToCheck == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat.yMMMd().format(date);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final transactionListAsync = ref.watch(transactionListProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.account_balance_wallet, color: textColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    "VaultFlow",
+                    style: GoogleFonts.poppins(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.sync, color: textColor),
+                    onPressed: () async {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Syncing SMS...')),
+                      );
+                      try {
+                        final count = await ref.refresh(smsSyncProvider.future);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Synced $count new transactions')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Sync failed: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: transactionListAsync.when(
+                data: (transactions) {
+                  // Calculate totals
+                  double totalBalance = 0;
+                  double totalIncome = 0;
+                  double totalExpense = 0;
+
+                  for (var txn in transactions) {
+                    if (txn.isExpense) {
+                      totalExpense += txn.amount;
+                      totalBalance -= txn.amount;
+                    } else {
+                      totalIncome += txn.amount;
+                      totalBalance += txn.amount;
+                    }
+                  }
+
+                  if (transactions.isEmpty) {
+                    return CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: BalanceCard(
+                            totalBalance: totalBalance,
+                            totalIncome: totalIncome,
+                            totalExpense: totalExpense,
+                            currencySymbol: settings.currencySymbol,
+                          ),
+                        ),
+                        const SliverFillRemaining(
+                          child: Center(child: Text('No transactions yet')),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Group transactions by date
+                  final groupedTransactions = <String, List<Transaction>>{};
+                  for (var txn in transactions) {
+                    final dateKey = _getDateHeader(txn.date);
+                    if (!groupedTransactions.containsKey(dateKey)) {
+                      groupedTransactions[dateKey] = [];
+                    }
+                    groupedTransactions[dateKey]!.add(txn);
+                  }
+
+                  return CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: BalanceCard(
+                          totalBalance: totalBalance,
+                          totalIncome: totalIncome,
+                          totalExpense: totalExpense,
+                          currencySymbol: settings.currencySymbol,
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final dateKey = groupedTransactions.keys.elementAt(index);
+                            final txns = groupedTransactions[dateKey]!;
+                            
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 8.0,
+                                  ),
+                                  child: Text(
+                                    dateKey,
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.secondaryGrey,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                ...txns.map((txn) => InkWell(
+                                  onTap: () => context.push('/add_transaction', extra: txn),
+                                  child: TransactionCard(transaction: txn),
+                                )),
+                                const SizedBox(height: 16),
+                              ],
+                            );
+                          },
+                          childCount: groupedTransactions.length,
+                        ),
+                      ),
+                      const SliverPadding(padding: EdgeInsets.only(bottom: 80)), // Space for FAB
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Error: $err')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 </file>
 
 </files>

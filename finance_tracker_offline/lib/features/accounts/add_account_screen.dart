@@ -1,10 +1,12 @@
 import 'package:finance_tracker_offline/core/database/db_service.dart';
 import 'package:finance_tracker_offline/features/accounts/providers/account_provider.dart';
 import 'package:finance_tracker_offline/models/account.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AddAccountScreen extends ConsumerStatefulWidget {
   const AddAccountScreen({super.key});
@@ -68,11 +70,47 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
     }
   }
 
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint, String? prefixText}) {
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white : AppColors.brandDark;
+
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixText: prefixText,
+      filled: true,
+      fillColor: Theme.of(context).cardTheme.color,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: borderColor, width: 1),
+      ),
+      labelStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+      hintStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+      prefixStyle: GoogleFonts.poppins(color: textColor),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+    final borderColor = isDark ? Colors.white : AppColors.brandDark;
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Add Account'),
+        title: Text('Add Account', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -83,11 +121,8 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Account Name',
-                  hintText: 'e.g., HDFC Salary',
-                  border: OutlineInputBorder(),
-                ),
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'Account Name', hint: 'e.g., HDFC Salary'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a name';
@@ -96,35 +131,77 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Account Type',
-                  border: OutlineInputBorder(),
-                ),
-                items: _accountTypes.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (context) {
+                      return SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 16),
+                            Text(
+                              'Select Account Type',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ..._accountTypes.map((type) {
+                              return ListTile(
+                                title: Text(
+                                  type,
+                                  style: GoogleFonts.poppins(color: textColor),
+                                ),
+                                trailing: _selectedType == type
+                                    ? Icon(Icons.check, color: borderColor)
+                                    : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedType = type;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      );
+                    },
                   );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedType = value;
-                    });
-                  }
                 },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardTheme.color,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedType,
+                          style: GoogleFonts.poppins(color: textColor, fontSize: 16),
+                        ),
+                      ),
+                      Icon(Icons.keyboard_arrow_down, color: textColor),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _lastFourDigitsController,
-                decoration: const InputDecoration(
-                  labelText: 'SMS Matching Digits',
-                  hintText: 'Last 4 digits of account/card',
-                  border: OutlineInputBorder(),
-                  counterText: "",
-                ),
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'SMS Matching Digits', hint: 'Last 4 digits of account/card').copyWith(counterText: ""),
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -132,11 +209,8 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _initialBalanceController,
-                decoration: const InputDecoration(
-                  labelText: 'Initial Balance',
-                  border: OutlineInputBorder(),
-                  prefixText: '₹ ',
-                ),
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'Initial Balance', prefixText: '₹ '),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -149,9 +223,9 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Color',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -173,7 +247,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                         color: Color(colorValue),
                         shape: BoxShape.circle,
                         border: isSelected
-                            ? Border.all(color: Colors.black, width: 3)
+                            ? Border.all(color: borderColor, width: 3)
                             : null,
                         boxShadow: [
                           BoxShadow(
@@ -194,11 +268,14 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
               ElevatedButton(
                 onPressed: _saveAccount,
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandRed,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: const StadiumBorder(),
                 ),
-                child: const Text(
+                child: Text(
                   'Save Account',
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ],

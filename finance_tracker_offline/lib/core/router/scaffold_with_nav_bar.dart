@@ -12,39 +12,87 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = _calculateSelectedIndex(context);
+
     return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey[200]!)),
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primaryBlack,
-          unselectedItemColor: AppColors.secondaryGrey,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          currentIndex: _calculateSelectedIndex(context),
-          onTap: (int idx) => _onItemTapped(idx, context),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long),
-              label: 'Trans.',
+      body: Stack(
+        children: [
+          child,
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.brandDark,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(context, 0, Icons.receipt_long, currentIndex),
+                  _buildNavItem(context, 1, Icons.pie_chart, currentIndex),
+                  const SizedBox(width: 48), // Space for FAB
+                  _buildNavItem(context, 2, Icons.account_balance, currentIndex),
+                  _buildNavItem(context, 3, Icons.settings, currentIndex),
+                ],
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart),
-              label: 'Stats',
+          ),
+          Positioned(
+            bottom: 45, // Adjusted to sit nicely above/docked
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: FloatingActionButton(
+                  onPressed: () => context.push('/add_transaction'),
+                  backgroundColor: AppColors.brandRed,
+                  shape: const CircleBorder(),
+                  elevation: 4,
+                  child: const Icon(Icons.add, color: Colors.white, size: 32),
+                ),
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet),
-              label: 'Accounts',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(BuildContext context, int index, IconData icon, int currentIndex) {
+    final isSelected = index == currentIndex;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onItemTapped(index, context),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 60,
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: isSelected
+                ? BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  )
+                : null,
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-          ],
+          ),
         ),
       ),
     );

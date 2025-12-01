@@ -1,5 +1,6 @@
 import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BalanceCard extends StatelessWidget {
   const BalanceCard({
@@ -17,27 +18,30 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? Theme.of(context).cardTheme.color : AppColors.brandDark;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(24),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(32),
       ),
       child: Column(
         children: [
           Text(
             'Total Balance',
-            style: TextStyle(
-              color: AppColors.secondaryGrey,
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
               fontSize: 14,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             '$currencySymbol${totalBalance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: AppColors.primaryBlack,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -50,19 +54,19 @@ class BalanceCard extends StatelessWidget {
                 context,
                 label: 'Income',
                 amount: totalIncome,
-                color: AppColors.primaryBlack,
+                color: Colors.white,
                 icon: Icons.arrow_downward,
               ),
               Container(
                 height: 40,
                 width: 1,
-                color: AppColors.divider,
+                color: Colors.white24,
               ),
               _buildSummaryItem(
                 context,
                 label: 'Expenses',
                 amount: totalExpense,
-                color: AppColors.expenseRed,
+                color: AppColors.brandRed,
                 icon: Icons.arrow_upward,
               ),
             ],
@@ -85,12 +89,12 @@ class BalanceCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: AppColors.secondaryGrey),
+              Icon(icon, size: 16, color: Colors.white70),
               const SizedBox(width: 4),
               Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.secondaryGrey,
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
                   fontSize: 12,
                 ),
               ),
@@ -99,7 +103,7 @@ class BalanceCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '$currencySymbol${amount.toStringAsFixed(2)}',
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               color: color,
               fontSize: 16,
               fontWeight: FontWeight.bold,

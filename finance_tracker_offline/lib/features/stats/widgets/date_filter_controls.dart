@@ -1,5 +1,6 @@
 import 'package:finance_tracker_offline/features/stats/models/date_filter_type.dart';
 import 'package:finance_tracker_offline/features/stats/providers/date_filter_provider.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +12,8 @@ class DateFilterControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filterState = ref.watch(dateFilterProvider);
     final notifier = ref.read(dateFilterProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     String dateText = _getDateText(filterState);
 
@@ -19,20 +22,70 @@ class DateFilterControls extends ConsumerWidget {
       child: Row(
         children: [
           // Filter Type Dropdown
-          DropdownButton<DateFilterType>(
-            value: filterState.type,
-            underline: Container(), // Remove underline
-            onChanged: (DateFilterType? newValue) {
-              if (newValue != null) {
-                notifier.setFilterType(newValue);
-              }
-            },
-            items: DateFilterType.values.map((DateFilterType type) {
-              return DropdownMenuItem<DateFilterType>(
-                value: type,
-                child: Text(type.label),
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) {
+                  return SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 100),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 16),
+                          Text(
+                            'Select Period',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          ...DateFilterType.values.map((type) {
+                            return ListTile(
+                              title: Text(type.label),
+                              trailing: filterState.type == type
+                                  ? Icon(Icons.check, color: isDark ? Colors.white : AppColors.brandDark)
+                                  : null,
+                              onTap: () {
+                                notifier.setFilterType(type);
+                                Navigator.pop(context);
+                              },
+                            );
+                          }),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
-            }).toList(),
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardTheme.color,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    filterState.type.label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: textColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.keyboard_arrow_down, color: textColor),
+                ],
+              ),
+            ),
           ),
           
           const Spacer(),

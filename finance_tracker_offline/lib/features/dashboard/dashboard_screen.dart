@@ -9,6 +9,7 @@ import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -33,9 +34,10 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final transactionListAsync = ref.watch(transactionListProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -43,19 +45,19 @@ class DashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
+                  Icon(Icons.account_balance_wallet, color: textColor),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "VaultFlow",
-                    style: TextStyle(
-                      color: AppColors.primaryBlack,
+                    style: GoogleFonts.poppins(
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
                     ),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.sync, color: AppColors.primaryBlack),
+                    icon: Icon(Icons.sync, color: textColor),
                     onPressed: () async {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Syncing SMS...')),
@@ -151,10 +153,11 @@ class DashboardScreen extends ConsumerWidget {
                                   ),
                                   child: Text(
                                     dateKey,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: AppColors.secondaryGrey,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    style: GoogleFonts.poppins(
+                                      color: AppColors.secondaryGrey,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
                                 ...txns.map((txn) => InkWell(
@@ -178,11 +181,6 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add_transaction'),
-        backgroundColor: AppColors.brandPrimary,
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

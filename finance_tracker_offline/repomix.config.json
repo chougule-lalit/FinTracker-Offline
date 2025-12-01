@@ -3,7 +3,11 @@
         "style": "xml",
         "copyToClipboard": true
     },
-    "include": ["**/*"],
+    "include": [
+        "**/*",
+        "PROJECT_MASTER_SAVE.md",
+        "MENTORSHIP_LOG.md"
+    ],
     "ignore": [
         "**/*.freezed.dart",
         "**/*.g.dart",
@@ -17,7 +21,6 @@
         "linux/**",
         "build/**",
         ".dart_tool/**",
-        "assets/**",
-        "PROJECT_MASTER_SAVE.md"
+        "assets/**"
     ]
 }

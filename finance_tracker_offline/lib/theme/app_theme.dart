@@ -3,84 +3,102 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  static ThemeData get lightTheme => _buildTheme(Brightness.light);
+  static ThemeData get darkTheme => _buildTheme(Brightness.dark);
+
+  static ThemeData _buildTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    
+    // Logic to switch colors based on brightness using only available AppColors
+    final bgColor = isDark ? AppColors.brandDark : AppColors.scaffoldBackground;
+    final textColor = isDark ? AppColors.brandWhite : AppColors.primaryBlack;
+    final cardColor = isDark ? const Color(0xFF252525) : AppColors.cardSurface;
+    final iconColor = isDark ? AppColors.brandWhite : AppColors.brandDark;
+
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.scaffoldBackground,
+      brightness: brightness,
+      scaffoldBackgroundColor: bgColor,
       
-      // AppBar Theme
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.scaffoldBackground,
+      // Typography: Poppins
+      textTheme: GoogleFonts.poppinsTextTheme().apply(
+        bodyColor: textColor,
+        displayColor: textColor,
+      ),
+
+      // AppBar
+      appBarTheme: AppBarTheme(
+        backgroundColor: bgColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.primaryBlack),
-        titleTextStyle: TextStyle(
-          color: AppColors.primaryBlack,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: iconColor),
+        titleTextStyle: GoogleFonts.poppins(
+          color: textColor,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
         ),
       ),
 
-      // Card Theme
+      // Card Theme (32px Radius)
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: cardColor,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        margin: const EdgeInsets.symmetric(vertical: 8),
       ),
 
-      // Input Decoration Theme
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryBlack, width: 1),
-        ),
-        contentPadding: const EdgeInsets.all(16),
-        hintStyle: const TextStyle(color: AppColors.secondaryGrey),
-      ),
-
-      // Elevated Button Theme
+      // Elevated Button (Stadium Shape + Brand Red)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.brandPrimary,
+          backgroundColor: AppColors.brandRed,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          minimumSize: const Size(double.infinity, 50),
           elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          shape: const StadiumBorder(), // Pill shape
+        ),
+      ),
+      
+      // Floating Action Button
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.brandDark, 
+        foregroundColor: Colors.white,
+        shape: CircleBorder(),
+      ),
+      
+      // Icon Theme
+      iconTheme: IconThemeData(color: iconColor),
+
+      // Date Picker Theme
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.scaffoldBackground,
+        headerBackgroundColor: AppColors.brandDark,
+        headerForegroundColor: AppColors.brandWhite,
+        dayForegroundColor: WidgetStateProperty.all(AppColors.primaryBlack),
+        yearForegroundColor: WidgetStateProperty.all(AppColors.primaryBlack),
+        cancelButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(AppColors.brandRed),
+        ),
+        confirmButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(AppColors.brandRed),
         ),
       ),
 
-      // Typography
-      textTheme: GoogleFonts.interTextTheme().apply(
-        bodyColor: AppColors.primaryBlack,
-        displayColor: AppColors.primaryBlack,
+      // Popup Menu Theme
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      
-      // Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
-        thickness: 1,
-      ),
-      
-      // Color Scheme
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.brandPrimary,
-        surface: AppColors.surface,
-        primary: AppColors.brandPrimary,
-        secondary: AppColors.secondaryGrey,
+
+      // Dropdown Menu Theme
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(AppColors.cardSurface),
+          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
       ),
     );
   }
