@@ -40,9 +40,28 @@ class ScaffoldWithNavBar extends StatelessWidget {
                 children: [
                   _buildNavItem(context, 0, Icons.receipt_long, currentIndex),
                   _buildNavItem(context, 1, Icons.pie_chart, currentIndex),
+                  const SizedBox(width: 48), // Space for FAB
                   _buildNavItem(context, 2, Icons.account_balance_wallet, currentIndex),
                   _buildNavItem(context, 3, Icons.settings, currentIndex),
                 ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 45, // Adjusted to sit nicely above/docked
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: FloatingActionButton(
+                  onPressed: () => context.push('/add_transaction'),
+                  backgroundColor: AppColors.brandRed,
+                  shape: const CircleBorder(),
+                  elevation: 4,
+                  child: const Icon(Icons.add, color: Colors.white, size: 32),
+                ),
               ),
             ),
           ),

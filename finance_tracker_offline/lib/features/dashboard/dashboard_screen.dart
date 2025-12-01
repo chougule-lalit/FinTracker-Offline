@@ -181,11 +181,6 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add_transaction'),
-        backgroundColor: AppColors.brandPrimary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 }
