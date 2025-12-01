@@ -1,0 +1,13 @@
+build/
+.dart_tool/
+android/
+ios/
+web/
+macos/
+windows/
+linux/
+assets/
+test/
+**/*.freezed.dart
+**/*.g.dart
+**/*.gen.dart
