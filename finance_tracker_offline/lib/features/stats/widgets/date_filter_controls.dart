@@ -12,6 +12,8 @@ class DateFilterControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filterState = ref.watch(dateFilterProvider);
     final notifier = ref.read(dateFilterProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     String dateText = _getDateText(filterState);
 
@@ -24,7 +26,7 @@ class DateFilterControls extends ConsumerWidget {
             onTap: () {
               showModalBottomSheet(
                 context: context,
-                backgroundColor: AppColors.scaffoldBackground,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
@@ -48,7 +50,7 @@ class DateFilterControls extends ConsumerWidget {
                             return ListTile(
                               title: Text(type.label),
                               trailing: filterState.type == type
-                                  ? const Icon(Icons.check, color: AppColors.brandDark)
+                                  ? Icon(Icons.check, color: isDark ? Colors.white : AppColors.brandDark)
                                   : null,
                               onTap: () {
                                 notifier.setFilterType(type);
@@ -67,7 +69,7 @@ class DateFilterControls extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.cardSurface,
+                color: Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -75,12 +77,12 @@ class DateFilterControls extends ConsumerWidget {
                   Text(
                     filterState.type.label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primaryBlack,
+                          color: textColor,
                           fontWeight: FontWeight.w500,
                         ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryBlack),
+                  Icon(Icons.keyboard_arrow_down, color: textColor),
                 ],
               ),
             ),

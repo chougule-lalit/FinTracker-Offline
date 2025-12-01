@@ -312,11 +312,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   }
 
   Widget _buildTransactionTypeSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(100),
       ),
       child: LayoutBuilder(
@@ -341,7 +344,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Container(
                   margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.brandDark,
+                    color: isDark ? AppColors.brandBeige : AppColors.brandDark,
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
@@ -349,9 +352,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               // Layer 3 (Text/Icons)
               Row(
                 children: [
-                  _buildSelectorItem(TransactionType.expense, 'Expense'),
-                  _buildSelectorItem(TransactionType.income, 'Income'),
-                  _buildSelectorItem(TransactionType.transfer, 'Transfer'),
+                  _buildSelectorItem(TransactionType.expense, 'Expense', isDark, textColor),
+                  _buildSelectorItem(TransactionType.income, 'Income', isDark, textColor),
+                  _buildSelectorItem(TransactionType.transfer, 'Transfer', isDark, textColor),
                 ],
               ),
             ],
@@ -361,7 +364,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     );
   }
 
-  Widget _buildSelectorItem(TransactionType type, String label) {
+  Widget _buildSelectorItem(TransactionType type, String label, bool isDark, Color textColor) {
     final isSelected = _transactionType == type;
     return Expanded(
       child: GestureDetector(
@@ -380,7 +383,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             label,
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.primaryBlack,
+              color: isSelected ? (isDark ? AppColors.brandDark : Colors.white) : textColor,
               fontSize: 14,
             ),
           ),
@@ -393,14 +396,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final accountsAsync = ref.watch(accountsProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: AppColors.scaffoldBackground,
-        title: Text('Add Transaction', style: GoogleFonts.poppins(color: AppColors.primaryBlack, fontWeight: FontWeight.w600)),
-        iconTheme: const IconThemeData(color: AppColors.primaryBlack),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text('Add Transaction', style: GoogleFonts.poppins(color: textColor, fontWeight: FontWeight.w600)),
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: SafeArea(
         child: Column(
@@ -415,7 +419,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       child: IntrinsicWidth(
                         child: TextField(
                           controller: _amountController,
-                          style: GoogleFonts.poppins(fontSize: 48, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+                          style: GoogleFonts.poppins(fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
                           textAlign: TextAlign.center,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
@@ -423,7 +427,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                             hintText: '0',
                             prefixText: '₹ ',
                             hintStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
-                            prefixStyle: GoogleFonts.poppins(color: AppColors.primaryBlack, fontSize: 48, fontWeight: FontWeight.bold),
+                            prefixStyle: GoogleFonts.poppins(color: textColor, fontSize: 48, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -444,23 +448,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         decoration: BoxDecoration(
-                          color: AppColors.cardSurface,
+                          color: Theme.of(context).cardTheme.color,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
+                            Icon(Icons.account_balance_wallet, color: textColor),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _selectedAccount?.name ?? 'Select Account',
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryBlack,
+                                  color: textColor,
                                 ),
                               ),
                             ),
-                            const Icon(Icons.arrow_drop_down, color: AppColors.primaryBlack),
+                            Icon(Icons.arrow_drop_down, color: textColor),
                           ],
                         ),
                       ),
@@ -472,7 +476,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
+                        color: Theme.of(context).cardTheme.color,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
@@ -480,8 +484,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           // Item 1: Category OR Target Account
                           if (_transactionType == TransactionType.transfer)
                              ListTile(
-                                leading: const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
-                                title: Text(_targetAccount?.name ?? 'Select Target Account', style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                                leading: Icon(Icons.account_balance_wallet, color: textColor),
+                                title: Text(_targetAccount?.name ?? 'Select Target Account', style: GoogleFonts.poppins(color: textColor)),
                                 trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                                 onTap: () {
                                    accountsAsync.whenData((accounts) => _showTargetAccountPicker(accounts));
@@ -489,8 +493,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                              )
                           else
                              ListTile(
-                                leading: const Icon(Icons.category, color: AppColors.primaryBlack),
-                                title: Text(_selectedCategory?.name ?? 'Select Category', style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                                leading: Icon(Icons.category, color: textColor),
+                                title: Text(_selectedCategory?.name ?? 'Select Category', style: GoogleFonts.poppins(color: textColor)),
                                 trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                                 onTap: () {
                                    categoriesAsync.whenData((categories) => _showCategoryPicker(categories));
@@ -501,8 +505,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           
                           // Item 2: Date
                           ListTile(
-                            leading: const Icon(Icons.calendar_today, color: AppColors.primaryBlack),
-                            title: Text(DateFormat('dd MMM yyyy').format(_selectedDate), style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                            leading: Icon(Icons.calendar_today, color: textColor),
+                            title: Text(DateFormat('dd MMM yyyy').format(_selectedDate), style: GoogleFonts.poppins(color: textColor)),
                             trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                             onTap: () async {
                               final picked = await showDatePicker(
@@ -510,23 +514,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                                 initialDate: _selectedDate,
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime.now().add(const Duration(days: 365)),
-                                builder: (context, child) {
-                                  return Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: const ColorScheme.light(
-                                        primary: AppColors.brandDark,
-                                        onPrimary: Colors.white,
-                                        onSurface: AppColors.primaryBlack,
-                                      ),
-                                      textButtonTheme: TextButtonThemeData(
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: AppColors.brandDark,
-                                        ),
-                                      ),
-                                    ),
-                                    child: child!,
-                                  );
-                                },
                               );
                               if (picked != null) {
                                 setState(() {
@@ -540,8 +527,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           
                           // Item 3: Note
                           ListTile(
-                            leading: const Icon(Icons.edit, color: AppColors.primaryBlack),
-                            title: Text(_noteController.text.isEmpty ? 'Add Note' : _noteController.text, style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                            leading: Icon(Icons.edit, color: textColor),
+                            title: Text(_noteController.text.isEmpty ? 'Add Note' : _noteController.text, style: GoogleFonts.poppins(color: textColor)),
                             trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                             onTap: _showNoteEditor,
                           ),
@@ -550,9 +537,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
                            // Item 4: Receipt
                            ListTile(
-                            leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlack),
-                            title: Text(_receiptPath == null ? 'Attach Receipt' : 'Receipt Attached', style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
-                            trailing: _receiptPath == null ? const Icon(Icons.chevron_right, color: AppColors.secondaryGrey) : IconButton(icon: const Icon(Icons.close, color: AppColors.primaryBlack), onPressed: () => setState(() => _receiptPath = null)),
+                            leading: Icon(Icons.camera_alt, color: textColor),
+                            title: Text(_receiptPath == null ? 'Attach Receipt' : 'Receipt Attached', style: GoogleFonts.poppins(color: textColor)),
+                            trailing: _receiptPath == null ? const Icon(Icons.chevron_right, color: AppColors.secondaryGrey) : IconButton(icon: Icon(Icons.close, color: textColor), onPressed: () => setState(() => _receiptPath = null)),
                             onTap: _receiptPath == null ? _pickReceipt : () {
                                Navigator.push(
                                 context,

@@ -70,13 +70,17 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
     }
   }
 
-  InputDecoration _inputDecoration(String label, {String? hint, String? prefixText}) {
+  InputDecoration _inputDecoration(BuildContext context, String label, {String? hint, String? prefixText}) {
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white : AppColors.brandDark;
+
     return InputDecoration(
       labelText: label,
       hintText: hint,
       prefixText: prefixText,
       filled: true,
-      fillColor: AppColors.cardSurface,
+      fillColor: Theme.of(context).cardTheme.color,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
@@ -87,21 +91,25 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.brandDark, width: 1),
+        borderSide: BorderSide(color: borderColor, width: 1),
       ),
       labelStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
       hintStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
-      prefixStyle: GoogleFonts.poppins(color: AppColors.primaryBlack),
+      prefixStyle: GoogleFonts.poppins(color: textColor),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
+    final borderColor = isDark ? Colors.white : AppColors.brandDark;
+
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Add Account', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.scaffoldBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -113,8 +121,8 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                style: GoogleFonts.poppins(color: AppColors.primaryBlack),
-                decoration: _inputDecoration('Account Name', hint: 'e.g., HDFC Salary'),
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'Account Name', hint: 'e.g., HDFC Salary'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a name';
@@ -127,7 +135,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
-                    backgroundColor: AppColors.scaffoldBackground,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                     ),
@@ -142,7 +150,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlack,
+                                color: textColor,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -150,10 +158,10 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                               return ListTile(
                                 title: Text(
                                   type,
-                                  style: GoogleFonts.poppins(color: AppColors.primaryBlack),
+                                  style: GoogleFonts.poppins(color: textColor),
                                 ),
                                 trailing: _selectedType == type
-                                    ? const Icon(Icons.check, color: AppColors.brandDark)
+                                    ? Icon(Icons.check, color: borderColor)
                                     : null,
                                 onTap: () {
                                   setState(() {
@@ -173,7 +181,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
+                    color: Theme.of(context).cardTheme.color,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -181,10 +189,10 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                       Expanded(
                         child: Text(
                           _selectedType,
-                          style: GoogleFonts.poppins(color: AppColors.primaryBlack, fontSize: 16),
+                          style: GoogleFonts.poppins(color: textColor, fontSize: 16),
                         ),
                       ),
-                      const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryBlack),
+                      Icon(Icons.keyboard_arrow_down, color: textColor),
                     ],
                   ),
                 ),
@@ -192,8 +200,8 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _lastFourDigitsController,
-                style: GoogleFonts.poppins(color: AppColors.primaryBlack),
-                decoration: _inputDecoration('SMS Matching Digits', hint: 'Last 4 digits of account/card').copyWith(counterText: ""),
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'SMS Matching Digits', hint: 'Last 4 digits of account/card').copyWith(counterText: ""),
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -201,8 +209,8 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _initialBalanceController,
-                style: GoogleFonts.poppins(color: AppColors.primaryBlack),
-                decoration: _inputDecoration('Initial Balance', prefixText: '₹ '),
+                style: GoogleFonts.poppins(color: textColor),
+                decoration: _inputDecoration(context, 'Initial Balance', prefixText: '₹ '),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -217,7 +225,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
               const SizedBox(height: 24),
               Text(
                 'Color',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -239,7 +247,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                         color: Color(colorValue),
                         shape: BoxShape.circle,
                         border: isSelected
-                            ? Border.all(color: AppColors.brandDark, width: 3)
+                            ? Border.all(color: borderColor, width: 3)
                             : null,
                         boxShadow: [
                           BoxShadow(

@@ -20,10 +20,15 @@ class SettingsService {
 
   static const String _currencyCodeKey = 'currency_code';
   static const String _currencySymbolKey = 'currency_symbol';
+  static const String _themeModeKey = 'theme_mode';
 
   Future<void> setCurrency(String code, String symbol) async {
     await _prefs.setString(_currencyCodeKey, code);
     await _prefs.setString(_currencySymbolKey, symbol);
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    await _prefs.setString(_themeModeKey, mode);
   }
 
   String getCurrencySymbol() {
@@ -32,6 +37,10 @@ class SettingsService {
 
   String getCurrencyCode() {
     return _prefs.getString(_currencyCodeKey) ?? "INR";
+  }
+
+  String getThemeMode() {
+    return _prefs.getString(_themeModeKey) ?? "system";
   }
 
   Future<void> clearAll() async {

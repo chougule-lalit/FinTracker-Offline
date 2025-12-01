@@ -26,14 +26,15 @@ class StatsScreen extends ConsumerWidget {
 
     final expenseTotal = calculateTotal(expenseAsync);
     final incomeTotal = calculateTotal(incomeAsync);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppColors.scaffoldBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text('Statistics', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          backgroundColor: AppColors.scaffoldBackground,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
         ),
         body: Column(
@@ -44,12 +45,12 @@ class StatsScreen extends ConsumerWidget {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               child: TabBar(
-                indicator: const ShapeDecoration(
-                  color: AppColors.brandDark,
-                  shape: StadiumBorder(),
+                indicator: ShapeDecoration(
+                  color: isDark ? AppColors.brandBeige : AppColors.brandDark,
+                  shape: const StadiumBorder(),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: Colors.white,
+                labelColor: isDark ? AppColors.brandDark : Colors.white,
                 unselectedLabelColor: AppColors.secondaryGrey,
                 labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 dividerColor: Colors.transparent,

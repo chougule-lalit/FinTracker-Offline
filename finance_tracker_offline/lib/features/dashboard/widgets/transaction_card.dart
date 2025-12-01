@@ -21,13 +21,15 @@ class TransactionCard extends ConsumerWidget {
     final category = transaction.category.value;
     final isTransfer = transaction.isTransfer;
     final isExpense = transaction.isExpense;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     // 1. Color Logic
     final Color amountColor;
     if (isTransfer) {
-      amountColor = AppColors.primaryBlack;
+      amountColor = textColor;
     } else {
-      amountColor = isExpense ? AppColors.brandRed : AppColors.primaryBlack;
+      amountColor = isExpense ? AppColors.brandRed : textColor;
     }
 
     final amountPrefix = isTransfer ? '' : (isExpense ? '-' : '+');
@@ -56,7 +58,7 @@ class TransactionCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -65,7 +67,7 @@ class TransactionCard extends ConsumerWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.brandDark,
+              color: isDark ? const Color(0xFF2C2C2C) : AppColors.brandDark,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -82,7 +84,7 @@ class TransactionCard extends ConsumerWidget {
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    color: AppColors.primaryBlack,
+                    color: textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),

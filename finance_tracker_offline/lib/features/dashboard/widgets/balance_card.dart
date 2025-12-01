@@ -18,11 +18,14 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? Theme.of(context).cardTheme.color : AppColors.brandDark;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.brandDark,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(32),
       ),
       child: Column(

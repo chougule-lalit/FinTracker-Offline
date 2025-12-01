@@ -34,9 +34,10 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final transactionListAsync = ref.watch(transactionListProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -44,19 +45,19 @@ class DashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
+                  Icon(Icons.account_balance_wallet, color: textColor),
                   const SizedBox(width: 8),
                   Text(
                     "VaultFlow",
                     style: GoogleFonts.poppins(
-                      color: AppColors.primaryBlack,
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
                     ),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.sync, color: AppColors.primaryBlack),
+                    icon: Icon(Icons.sync, color: textColor),
                     onPressed: () async {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Syncing SMS...')),

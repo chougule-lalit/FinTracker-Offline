@@ -13,15 +13,31 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Settings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.scaffoldBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.dark_mode,
+            title: 'Dark Mode',
+            subtitle: 'Toggle application theme',
+            onTap: () {
+              ref.read(settingsProvider.notifier).toggleTheme(settings.themeMode != ThemeMode.dark);
+            },
+            trailing: Switch(
+              value: settings.themeMode == ThemeMode.dark,
+              onChanged: (value) {
+                ref.read(settingsProvider.notifier).toggleTheme(value);
+              },
+              activeColor: Theme.of(context).iconTheme.color,
+            ),
+          ),
           _buildSettingsItem(
             context: context,
             icon: Icons.currency_exchange,
@@ -82,14 +98,20 @@ class SettingsScreen extends ConsumerWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Widget? trailing,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final subtitleColor = textColor?.withOpacity(0.6);
+    final iconBgColor = isDark ? const Color(0xFF2C2C2C) : AppColors.brandDark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -98,7 +120,7 @@ class SettingsScreen extends ConsumerWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.brandDark,
+                color: iconBgColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -117,20 +139,20 @@ class SettingsScreen extends ConsumerWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
-                      color: AppColors.primaryBlack,
+                      color: textColor,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppColors.secondaryGrey,
+                      color: subtitleColor,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
+            trailing ?? Icon(Icons.chevron_right, color: subtitleColor),
           ],
         ),
       ),

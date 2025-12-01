@@ -14,16 +14,17 @@ class AccountsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accountsAsync = ref.watch(accountsProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Accounts', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.scaffoldBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.brandDark),
+            icon: Icon(Icons.add_circle_outline, color: textColor),
             onPressed: () => context.push('/add_account'),
           ),
         ],
@@ -76,6 +77,7 @@ class AccountCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final accountColor = Color(int.parse(account.colorHex, radix: 16));
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack;
 
     return GestureDetector(
       onTap: () {
@@ -90,7 +92,7 @@ class AccountCard extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -118,7 +120,7 @@ class AccountCard extends ConsumerWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
-                      color: AppColors.primaryBlack,
+                      color: textColor,
                     ),
                   ),
                   if (account.lastFourDigits != null)
