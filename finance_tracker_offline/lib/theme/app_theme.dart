@@ -68,6 +68,38 @@ class AppTheme {
       
       // Icon Theme
       iconTheme: IconThemeData(color: iconColor),
+
+      // Date Picker Theme
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.scaffoldBackground,
+        headerBackgroundColor: AppColors.brandDark,
+        headerForegroundColor: AppColors.brandWhite,
+        dayForegroundColor: WidgetStateProperty.all(AppColors.primaryBlack),
+        yearForegroundColor: WidgetStateProperty.all(AppColors.primaryBlack),
+        cancelButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(AppColors.brandRed),
+        ),
+        confirmButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(AppColors.brandRed),
+        ),
+      ),
+
+      // Popup Menu Theme
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+
+      // Dropdown Menu Theme
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(AppColors.cardSurface),
+          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
+      ),
     );
   }
 }

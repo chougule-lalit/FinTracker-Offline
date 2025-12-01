@@ -41,7 +41,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
                   _buildNavItem(context, 0, Icons.receipt_long, currentIndex),
                   _buildNavItem(context, 1, Icons.pie_chart, currentIndex),
                   const SizedBox(width: 48), // Space for FAB
-                  _buildNavItem(context, 2, Icons.account_balance_wallet, currentIndex),
+                  _buildNavItem(context, 2, Icons.account_balance, currentIndex),
                   _buildNavItem(context, 3, Icons.settings, currentIndex),
                 ],
               ),
@@ -72,20 +72,27 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   Widget _buildNavItem(BuildContext context, int index, IconData icon, int currentIndex) {
     final isSelected = index == currentIndex;
-    return GestureDetector(
-      onTap: () => _onItemTapped(index, context),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              )
-            : null,
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onItemTapped(index, context),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 60,
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: isSelected
+                ? BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  )
+                : null,
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
         ),
       ),
     );

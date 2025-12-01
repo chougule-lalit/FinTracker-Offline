@@ -21,6 +21,12 @@ class AccountsScreen extends ConsumerWidget {
         title: Text('Accounts', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, color: AppColors.brandDark),
+            onPressed: () => context.push('/add_account'),
+          ),
+        ],
       ),
       body: accountsAsync.when(
         data: (accounts) {
@@ -43,11 +49,6 @@ class AccountsScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add_account'),
-        backgroundColor: AppColors.brandPrimary,
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -74,6 +75,7 @@ class AccountCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final accountColor = Color(int.parse(account.colorHex, radix: 16));
 
     return GestureDetector(
       onTap: () {
@@ -97,12 +99,12 @@ class AccountCard extends ConsumerWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.brandDark,
+                color: accountColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 _getIconForType(account.type),
-                color: Colors.white,
+                color: accountColor,
                 size: 24,
               ),
             ),

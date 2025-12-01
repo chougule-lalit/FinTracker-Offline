@@ -123,24 +123,71 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedType,
-                style: GoogleFonts.poppins(color: AppColors.primaryBlack),
-                decoration: _inputDecoration('Account Type'),
-                dropdownColor: AppColors.cardSurface,
-                items: _accountTypes.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type, style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: AppColors.scaffoldBackground,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (context) {
+                      return SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 16),
+                            Text(
+                              'Select Account Type',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryBlack,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ..._accountTypes.map((type) {
+                              return ListTile(
+                                title: Text(
+                                  type,
+                                  style: GoogleFonts.poppins(color: AppColors.primaryBlack),
+                                ),
+                                trailing: _selectedType == type
+                                    ? const Icon(Icons.check, color: AppColors.brandDark)
+                                    : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedType = type;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      );
+                    },
                   );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedType = value;
-                    });
-                  }
                 },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedType,
+                          style: GoogleFonts.poppins(color: AppColors.primaryBlack, fontSize: 16),
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryBlack),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(

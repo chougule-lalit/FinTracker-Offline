@@ -200,37 +200,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     }
   }
 
-  void _showTypePicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: TransactionType.values.map((type) {
-              return ListTile(
-                leading: Icon(
-                  type == TransactionType.expense ? Icons.arrow_downward :
-                  type == TransactionType.income ? Icons.arrow_upward : Icons.swap_horiz
-                ),
-                title: Text(type.name.toUpperCase()),
-                onTap: () {
-                  setState(() {
-                    _transactionType = type;
-                    _selectedCategory = null;
-                    if (_transactionType != TransactionType.transfer) {
-                      _targetAccount = null;
-                    }
-                  });
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
   void _showAccountPicker(List<Account> accounts) {
     showModalBottomSheet(
       context: context,
@@ -342,6 +311,84 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     );
   }
 
+  Widget _buildTransactionTypeSelector() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final segmentWidth = constraints.maxWidth / 3;
+          final selectedIndex = _transactionType == TransactionType.expense
+              ? 0
+              : _transactionType == TransactionType.income
+                  ? 1
+                  : 2;
+
+          return Stack(
+            children: [
+              // Layer 2 (Active Indicator)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                left: segmentWidth * selectedIndex,
+                top: 0,
+                bottom: 0,
+                width: segmentWidth,
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.brandDark,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+              // Layer 3 (Text/Icons)
+              Row(
+                children: [
+                  _buildSelectorItem(TransactionType.expense, 'Expense'),
+                  _buildSelectorItem(TransactionType.income, 'Income'),
+                  _buildSelectorItem(TransactionType.transfer, 'Transfer'),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSelectorItem(TransactionType type, String label) {
+    final isSelected = _transactionType == type;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          setState(() {
+            _transactionType = type;
+            _selectedCategory = null;
+            if (_transactionType != TransactionType.transfer) {
+              _targetAccount = null;
+            }
+          });
+        },
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.primaryBlack,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
@@ -383,50 +430,40 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     ),
                     const SizedBox(height: 20),
                     
-                    // Pills Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Pill 1: Transaction Type
-                        GestureDetector(
-                          onTap: _showTypePicker,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.cardSurface,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(_transactionType.name.toUpperCase(), style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.primaryBlack)),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.primaryBlack),
-                              ],
-                            ),
-                          ),
+                    // Segmented Control for Transaction Type
+                    _buildTransactionTypeSelector(),
+                    
+                    const SizedBox(height: 16),
+
+                    // Account Selector
+                    GestureDetector(
+                      onTap: () {
+                        accountsAsync.whenData((accounts) => _showAccountPicker(accounts));
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        const SizedBox(width: 12),
-                        // Pill 2: Account
-                        GestureDetector(
-                          onTap: () {
-                            accountsAsync.whenData((accounts) => _showAccountPicker(accounts));
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.cardSurface,
-                              borderRadius: BorderRadius.circular(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedAccount?.name ?? 'Select Account',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryBlack,
+                                ),
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                Text(_selectedAccount?.name ?? 'Select Account', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.primaryBlack)),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.primaryBlack),
-                              ],
-                            ),
-                          ),
+                            const Icon(Icons.arrow_drop_down, color: AppColors.primaryBlack),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                     
                     const SizedBox(height: 32),
