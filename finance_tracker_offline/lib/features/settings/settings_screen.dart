@@ -1,7 +1,9 @@
 import 'package:finance_tracker_offline/features/settings/providers/backup_provider.dart';
 import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -11,20 +13,25 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text('Settings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.scaffoldBackground,
+        elevation: 0,
       ),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          ListTile(
-            leading: const Icon(Icons.currency_exchange),
-            title: const Text('Currency'),
-            subtitle: Text('${settings.currencyCode} (${settings.currencySymbol})'),
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.currency_exchange,
+            title: 'Currency',
+            subtitle: '${settings.currencyCode} (${settings.currencySymbol})',
             onTap: () {
               showDialog(
                 context: context,
                 builder: (context) => SimpleDialog(
-                  title: const Text('Select Currency'),
+                  title: Text('Select Currency', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   children: [
                     _buildCurrencyOption(context, ref, 'INR', '₹'),
                     _buildCurrencyOption(context, ref, 'USD', '\$'),
@@ -35,10 +42,11 @@ class SettingsScreen extends ConsumerWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.save_alt),
-            title: const Text('Backup Data'),
-            subtitle: const Text('Export data to JSON'),
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.save_alt,
+            title: 'Backup Data',
+            subtitle: 'Export data to JSON',
             onTap: () async {
               try {
                 await ref.read(backupServiceProvider).createBackup();
@@ -56,13 +64,75 @@ class SettingsScreen extends ConsumerWidget {
               }
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.restore),
-            title: const Text('Restore Data'),
-            subtitle: const Text('Import JSON and replace DB'),
+          _buildSettingsItem(
+            context: context,
+            icon: Icons.restore,
+            title: 'Restore Data',
+            subtitle: 'Import JSON and replace DB',
             onTap: () => _confirmRestore(context, ref),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.brandDark,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: AppColors.primaryBlack,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.secondaryGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
+          ],
+        ),
       ),
     );
   }
@@ -71,17 +141,18 @@ class SettingsScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Warning: Data Loss'),
-        content: const Text(
-            'This will wipe all current data and replace it with the backup. Are you sure?'),
+        title: Text('Warning: Data Loss', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+            'This will wipe all current data and replace it with the backup. Are you sure?',
+            style: GoogleFonts.poppins()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: GoogleFonts.poppins()),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Restore', style: TextStyle(color: Colors.red)),
+            child: Text('Restore', style: GoogleFonts.poppins(color: AppColors.brandRed)),
           ),
         ],
       ),
@@ -125,7 +196,7 @@ class SettingsScreen extends ConsumerWidget {
         ref.read(settingsProvider.notifier).updateCurrency(code, symbol);
         Navigator.pop(context);
       },
-      child: Text('$code ($symbol)'),
+      child: Text('$code ($symbol)', style: GoogleFonts.poppins()),
     );
   }
 }

@@ -6,9 +6,11 @@ import 'package:finance_tracker_offline/features/add_transaction/providers/recei
 import 'package:finance_tracker_offline/models/account.dart';
 import 'package:finance_tracker_offline/models/category.dart';
 import 'package:finance_tracker_offline/models/transaction.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -346,12 +348,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final accountsAsync = ref.watch(accountsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text('Add Transaction', style: TextStyle(color: Colors.black)),
-        iconTheme: const IconThemeData(color: Colors.black),
+        backgroundColor: AppColors.scaffoldBackground,
+        title: Text('Add Transaction', style: GoogleFonts.poppins(color: AppColors.primaryBlack, fontWeight: FontWeight.w600)),
+        iconTheme: const IconThemeData(color: AppColors.primaryBlack),
       ),
       body: SafeArea(
         child: Column(
@@ -366,13 +368,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       child: IntrinsicWidth(
                         child: TextField(
                           controller: _amountController,
-                          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.black),
+                          style: GoogleFonts.poppins(fontSize: 48, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
                           textAlign: TextAlign.center,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '0',
                             prefixText: '₹ ',
+                            hintStyle: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+                            prefixStyle: GoogleFonts.poppins(color: AppColors.primaryBlack, fontSize: 48, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -387,16 +391,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         GestureDetector(
                           onTap: _showTypePicker,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.cardSurface,
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
                               children: [
-                                Text(_transactionType.name.toUpperCase()),
+                                Text(_transactionType.name.toUpperCase(), style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.primaryBlack)),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20),
+                                const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.primaryBlack),
                               ],
                             ),
                           ),
@@ -408,16 +412,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                             accountsAsync.whenData((accounts) => _showAccountPicker(accounts));
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.cardSurface,
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
                               children: [
-                                Text(_selectedAccount?.name ?? 'Select Account'),
+                                Text(_selectedAccount?.name ?? 'Select Account', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.primaryBlack)),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20),
+                                const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.primaryBlack),
                               ],
                             ),
                           ),
@@ -431,45 +435,61 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.cardSurface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: Column(
                         children: [
                           // Item 1: Category OR Target Account
                           if (_transactionType == TransactionType.transfer)
                              ListTile(
-                                leading: const Icon(Icons.account_balance_wallet),
-                                title: Text(_targetAccount?.name ?? 'Select Target Account'),
-                                trailing: const Icon(Icons.chevron_right),
+                                leading: const Icon(Icons.account_balance_wallet, color: AppColors.primaryBlack),
+                                title: Text(_targetAccount?.name ?? 'Select Target Account', style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                                trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                                 onTap: () {
                                    accountsAsync.whenData((accounts) => _showTargetAccountPicker(accounts));
                                 },
                              )
                           else
                              ListTile(
-                                leading: const Icon(Icons.category),
-                                title: Text(_selectedCategory?.name ?? 'Select Category'),
-                                trailing: const Icon(Icons.chevron_right),
+                                leading: const Icon(Icons.category, color: AppColors.primaryBlack),
+                                title: Text(_selectedCategory?.name ?? 'Select Category', style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                                trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                                 onTap: () {
                                    categoriesAsync.whenData((categories) => _showCategoryPicker(categories));
                                 },
                              ),
                           
-                          const Divider(height: 1),
+                          const Divider(height: 1, color: AppColors.divider),
                           
                           // Item 2: Date
                           ListTile(
-                            leading: const Icon(Icons.calendar_today),
-                            title: Text(DateFormat('dd MMM yyyy').format(_selectedDate)),
-                            trailing: const Icon(Icons.chevron_right),
+                            leading: const Icon(Icons.calendar_today, color: AppColors.primaryBlack),
+                            title: Text(DateFormat('dd MMM yyyy').format(_selectedDate), style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                            trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                             onTap: () async {
                               final picked = await showDatePicker(
                                 context: context,
                                 initialDate: _selectedDate,
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime.now().add(const Duration(days: 365)),
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: const ColorScheme.light(
+                                        primary: AppColors.brandDark,
+                                        onPrimary: Colors.white,
+                                        onSurface: AppColors.primaryBlack,
+                                      ),
+                                      textButtonTheme: TextButtonThemeData(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: AppColors.brandDark,
+                                        ),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
                               );
                               if (picked != null) {
                                 setState(() {
@@ -479,23 +499,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                             },
                           ),
                           
-                          const Divider(height: 1),
+                          const Divider(height: 1, color: AppColors.divider),
                           
                           // Item 3: Note
                           ListTile(
-                            leading: const Icon(Icons.edit),
-                            title: Text(_noteController.text.isEmpty ? 'Add Note' : _noteController.text),
-                            trailing: const Icon(Icons.chevron_right),
+                            leading: const Icon(Icons.edit, color: AppColors.primaryBlack),
+                            title: Text(_noteController.text.isEmpty ? 'Add Note' : _noteController.text, style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                            trailing: const Icon(Icons.chevron_right, color: AppColors.secondaryGrey),
                             onTap: _showNoteEditor,
                           ),
 
-                           const Divider(height: 1),
+                           const Divider(height: 1, color: AppColors.divider),
 
                            // Item 4: Receipt
                            ListTile(
-                            leading: const Icon(Icons.camera_alt),
-                            title: Text(_receiptPath == null ? 'Attach Receipt' : 'Receipt Attached'),
-                            trailing: _receiptPath == null ? const Icon(Icons.chevron_right) : IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _receiptPath = null)),
+                            leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlack),
+                            title: Text(_receiptPath == null ? 'Attach Receipt' : 'Receipt Attached', style: GoogleFonts.poppins(color: AppColors.primaryBlack)),
+                            trailing: _receiptPath == null ? const Icon(Icons.chevron_right, color: AppColors.secondaryGrey) : IconButton(icon: const Icon(Icons.close, color: AppColors.primaryBlack), onPressed: () => setState(() => _receiptPath = null)),
                             onTap: _receiptPath == null ? _pickReceipt : () {
                                Navigator.push(
                                 context,
@@ -520,14 +540,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               child: ElevatedButton(
                 onPressed: _saveTransaction,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1C1C1E),
+                  backgroundColor: AppColors.brandRed,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: const StadiumBorder(),
                 ),
-                child: const Text('Save Expense', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text('Save Expense', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

@@ -1,9 +1,11 @@
 import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
 import 'package:finance_tracker_offline/features/stats/category_detail_screen.dart';
 import 'package:finance_tracker_offline/models/category.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/monthly_stats_provider.dart';
 
 class StatsCategoryView extends ConsumerWidget {
@@ -22,8 +24,8 @@ class StatsCategoryView extends ConsumerWidget {
     return statsAsync.when(
       data: (stats) {
         if (stats.isEmpty) {
-          return const Center(
-            child: Text('No Data for this Period'),
+          return Center(
+            child: Text('No Data for this Period', style: GoogleFonts.poppins()),
           );
         }
 
@@ -45,10 +47,10 @@ class StatsCategoryView extends ConsumerWidget {
                       radius: 50,
                       titlePositionPercentageOffset: 1.4,
                       showTitle: true,
-                      titleStyle: TextStyle(
+                      titleStyle: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                        color: AppColors.primaryBlack,
                       ),
                     );
                   }).toList(),
@@ -64,12 +66,6 @@ class StatsCategoryView extends ConsumerWidget {
                   final stat = stats[index];
                   return InkWell(
                     onTap: () {
-                      // We need to reconstruct the Category object or pass ID
-                      // Since CategoryStat only has name/color/icon, we might need to fetch or pass full object
-                      // For now, let's assume we can find it or pass minimal info.
-                      // Ideally, CategoryStat should hold the Category ID or object.
-                      // Let's update CategoryStat to hold the Category object if possible, or just ID.
-                      // Assuming we update CategoryStat to hold the Category object:
                       if (stat.category != null) {
                          Navigator.push(
                           context,
@@ -84,17 +80,17 @@ class StatsCategoryView extends ConsumerWidget {
                         backgroundColor: stat.color,
                         child: Text(
                           '${stat.percentage.round()}%',
-                          style: const TextStyle(
+                          style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      title: Text(stat.categoryName),
+                      title: Text(stat.categoryName, style: GoogleFonts.poppins()),
                       trailing: Text(
                         '${settings.currencySymbol} ${stat.totalAmount.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -108,7 +104,7 @@ class StatsCategoryView extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
+      error: (error, stack) => Center(child: Text('Error: $error', style: GoogleFonts.poppins())),
     );
   }
 }

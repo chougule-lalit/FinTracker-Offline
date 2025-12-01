@@ -2,10 +2,11 @@ import 'package:finance_tracker_offline/features/accounts/providers/account_prov
 import 'package:finance_tracker_offline/features/accounts/account_detail_screen.dart';
 import 'package:finance_tracker_offline/features/settings/providers/settings_provider.dart';
 import 'package:finance_tracker_offline/models/account.dart';
+import 'package:finance_tracker_offline/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AccountsScreen extends ConsumerWidget {
   const AccountsScreen({super.key});
@@ -15,18 +16,24 @@ class AccountsScreen extends ConsumerWidget {
     final accountsAsync = ref.watch(accountsProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text('Accounts'),
+        title: Text('Accounts', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.scaffoldBackground,
+        elevation: 0,
       ),
       body: accountsAsync.when(
         data: (accounts) {
           if (accounts.isEmpty) {
-            return const Center(
-              child: Text('No accounts added yet.'),
+            return Center(
+              child: Text(
+                'No accounts added yet.',
+                style: GoogleFonts.poppins(color: AppColors.secondaryGrey),
+              ),
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(16),
             itemCount: accounts.length,
             itemBuilder: (context, index) {
               final account = accounts[index];
@@ -39,7 +46,8 @@ class AccountsScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add_account'),
-        child: const Icon(Icons.add),
+        backgroundColor: AppColors.brandPrimary,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -66,42 +74,71 @@ class AccountCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final color = Color(int.parse(account.colorHex, radix: 16));
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AccountDetailScreen(account: account),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AccountDetailScreen(account: account),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.brandDark,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _getIconForType(account.type),
+                color: Colors.white,
+                size: 24,
+              ),
             ),
-          );
-        },
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(
-            _getIconForType(account.type),
-            color: color,
-          ),
-        ),
-        title: Text(
-          account.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: account.lastFourDigits != null
-            ? Text('Ends in: ${account.lastFourDigits}')
-            : null,
-        trailing: Text(
-          '${settings.currencySymbol} ${account.currentBalance.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: account.currentBalance >= 0 ? Colors.green : Colors.red,
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    account.name,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: AppColors.primaryBlack,
+                    ),
+                  ),
+                  if (account.lastFourDigits != null)
+                    Text(
+                      'Ends in: ${account.lastFourDigits}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.secondaryGrey,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              '${settings.currencySymbol} ${account.currentBalance.toStringAsFixed(2)}',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: account.currentBalance >= 0 ? AppColors.incomeGreen : AppColors.expenseRed,
+              ),
+            ),
+          ],
         ),
       ),
     );
